@@ -21,6 +21,7 @@ This file records material changes to how the template should be understood or u
 - Implemented the async platform bootstrap by adding BullMQ and `ioredis`, a shared queue runtime, `backend/worker.js`, and `Redis` plus `worker` service metadata in the project and deploy workflow files.
 - Aligned the shared backend Dockerfile and live Railway project so `backend` and `worker` now share the same deploy path, with real `Redis` and `worker` services provisioned for both `staging` and `production`.
 - Recorded the live Railway drift where staging currently uses `Redis` while production resolves worker traffic through `Redis-nFa9`, keeping that mismatch explicit instead of implying the metadata contract is fully reconciled.
+- Reconciled the live Railway Redis topology so both `staging` and `production` now use the canonical `Redis` service for the worker runtime.
 
 ## 2026-04-01
 
