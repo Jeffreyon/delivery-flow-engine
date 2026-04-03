@@ -35,12 +35,14 @@ router.get(
   })
 );
 
-// Upsert user document (admin or self)
+// Update an existing user document (admin or self)
 router.put(
   "/:id",
   requireSelfOrAdmin("id"),
   asyncHandler(async (req, res) => {
-    const user = await UsersService.upsertUser(req.params.id, req.body || {});
+    const user = req.authz.isAdmin
+      ? await UsersService.updateAdminUser(req.params.id, req.body || {})
+      : await UsersService.updateSelfUser(req.params.id, req.body || {});
     res.json(user);
   })
 );

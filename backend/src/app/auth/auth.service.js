@@ -5,7 +5,6 @@ const UsersService = require("../users/users.service");
 const UsersRepository = require("../users/users.repository");
 const SessionsRepository = require("../sessions/sessions.repository");
 const DevicesRepository = require("../devices/devices.repository");
-const EventsRepository = require("../events/events.repository");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRATION_SECONDS = Number(
@@ -96,15 +95,6 @@ async function login({ email, password, context = {} }) {
     }`;
     await DevicesRepository.registerDevice(user.id, deviceFingerprint);
   }
-
-  await EventsRepository.create({
-    type: "auth.login",
-    payload: {
-      uid: user.id,
-      ip: context.ip || null,
-      userAgent: context.userAgent || null,
-    },
-  });
 
   return {
     idToken,

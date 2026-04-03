@@ -11,7 +11,7 @@ export type RoleItem = {
   permissions: string[];
 };
 
-export type EventItem = {
+export type DeliveryEventItem = {
   id: string;
   type: string;
   payload: Record<string, unknown>;
@@ -32,11 +32,10 @@ export async function fetchRoles(): Promise<RoleItem[]> {
   return data as RoleItem[];
 }
 
-export async function fetchEvents(type?: string): Promise<EventItem[]> {
-  const { data } = await apiClient.get("/api/events", {
+export async function fetchDeliveryEvents(type?: string): Promise<DeliveryEventItem[]> {
+  const { data } = await apiClient.get("/api/delivery-events", {
     withCredentials: true,
     params: type ? { type } : undefined,
   });
-  return data as EventItem[];
+  return data as DeliveryEventItem[];
 }
-

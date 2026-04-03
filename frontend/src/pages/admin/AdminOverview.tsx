@@ -1,40 +1,51 @@
 import { useEffect, useState } from "react";
+import { LoadErrorCard } from "@/components/common/LoadErrorCard";
 import {
   fetchAllUsers,
-  fetchEvents,
+  fetchDeliveryEvents,
   fetchRoles,
   type AdminUser,
-  type EventItem,
+  type DeliveryEventItem,
   type RoleItem,
 } from "@/services/admin.api";
 
 type AdminOverviewState = {
   users: AdminUser[];
   roles: RoleItem[];
-  events: EventItem[];
+  deliveryEvents: DeliveryEventItem[];
 };
 
 const initialState: AdminOverviewState = {
   users: [],
   roles: [],
-  events: [],
+  deliveryEvents: [],
 };
 
 export default function AdminOverview() {
   const [state, setState] = useState<AdminOverviewState>(initialState);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
     (async () => {
+      if (active) {
+        setLoading(true);
+        setError(null);
+      }
+
       try {
-        const [users, roles, events] = await Promise.all([
+        const [users, roles, deliveryEvents] = await Promise.all([
           fetchAllUsers(),
           fetchRoles(),
-          fetchEvents(),
+          fetchDeliveryEvents(),
         ]);
         if (!active) return;
-        setState({ users, roles, events });
+        setState({ users, roles, deliveryEvents });
+      } catch {
+        if (!active) return;
+        setError("Admin overview data could not be loaded.");
       } finally {
         if (active) setLoading(false);
       }
@@ -42,7 +53,7 @@ export default function AdminOverview() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   if (loading) {
     return (
@@ -76,9 +87,19 @@ export default function AdminOverview() {
     );
   }
 
+  if (error) {
+    return (
+      <LoadErrorCard
+        title="Could not load the admin overview"
+        description={error}
+        onAction={() => setReloadKey((value) => value + 1)}
+      />
+    );
+  }
+
   const totalUsers = state.users.length;
   const totalRoles = state.roles.length;
-  const totalEvents = state.events.length;
+  const totalEvents = state.deliveryEvents.length;
 
   return (
     <div className="space-y-6">
@@ -90,9 +111,9 @@ export default function AdminOverview() {
           hint="Available RBAC roles"
         />
         <StatCard
-          label="Events"
+          label="Delivery events"
           value={totalEvents}
-          hint="Recent system events"
+          hint="Recent delivery event records"
         />
       </section>
 
@@ -133,15 +154,15 @@ export default function AdminOverview() {
 
         <div className="rounded-xl border border-border bg-card p-4">
           <header className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold">Recent events</h2>
+            <h2 className="text-sm font-semibold">Recent delivery events</h2>
           </header>
-          {state.events.length === 0 ? (
+          {state.deliveryEvents.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No events have been recorded yet.
+              No delivery events have been recorded yet.
             </p>
           ) : (
             <ul className="space-y-2 text-sm">
-              {state.events.slice(0, 6).map((evt) => (
+              {state.deliveryEvents.slice(0, 6).map((evt) => (
                 <li
                   key={evt.id}
                   className="flex items-center justify-between rounded-md bg-background/40 px-3 py-2 hover:bg-muted/40 transition-colors"

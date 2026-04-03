@@ -1,17 +1,28 @@
 import { useEffect, useState } from "react";
+import { LoadErrorCard } from "@/components/common/LoadErrorCard";
 import { fetchRoles, type RoleItem } from "@/services/admin.api";
 
 export default function AdminRolesPage() {
   const [roles, setRoles] = useState<RoleItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
     (async () => {
+      if (active) {
+        setLoading(true);
+        setError(null);
+      }
+
       try {
         const data = await fetchRoles();
         if (!active) return;
         setRoles(data);
+      } catch {
+        if (!active) return;
+        setError("Role definitions could not be loaded.");
       } finally {
         if (active) setLoading(false);
       }
@@ -19,7 +30,7 @@ export default function AdminRolesPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   if (loading) {
     return (
@@ -34,6 +45,16 @@ export default function AdminRolesPage() {
           <div className="h-3 w-10/12 rounded-md bg-muted/40" />
         </div>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <LoadErrorCard
+        title="Could not load roles"
+        description={error}
+        onAction={() => setReloadKey((value) => value + 1)}
+      />
     );
   }
 
@@ -70,7 +91,7 @@ export default function AdminRolesPage() {
                     {role.id}
                   </td>
                   <td className="px-4 py-2 align-top text-xs text-muted-foreground">
-                    {role.description ?? "—"}
+                    {role.description ?? "Unavailable"}
                   </td>
                   <td className="px-4 py-2 align-top text-xs">
                     {role.permissions.length ? (
@@ -97,4 +118,3 @@ export default function AdminRolesPage() {
     </div>
   );
 }
-

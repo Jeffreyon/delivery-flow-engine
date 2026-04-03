@@ -16,6 +16,7 @@ Do not write future-roadmap docs as if they are already implemented.
 - docs/API_SPEC.md
 - docs/UI_ARCHITECTURE.md
 - docs/IMPLEMENTATION_PLAN.md when planning follow-up work
+- docs/slices/README.md and the active file under `docs/slices/` when implementing a delivery slice
 - docs/MIGRATION_WORKFLOW.md when schema, bootstrap, CI, or deploy behavior is touched
 - frontend/AGENTS.md when working in frontend
 - backend/AGENTS.md when working in backend
@@ -54,6 +55,7 @@ Prefer bullets, short sections, and compact tables.
   - roles
   - notifications
   - events
+  - delivery-events
   - devices
   - sessions
   - settings

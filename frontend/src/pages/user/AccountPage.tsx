@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LoadErrorCard } from "@/components/common/LoadErrorCard";
 import {
   fetchAuthMe,
   fetchUser,
@@ -8,15 +9,25 @@ import {
 export default function AccountPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
     (async () => {
+      if (active) {
+        setLoading(true);
+        setError(null);
+      }
+
       try {
         const me = await fetchAuthMe();
         const user = await fetchUser(me.uid);
         if (!active) return;
         setProfile(user);
+      } catch {
+        if (!active) return;
+        setError("Account details could not be loaded.");
       } finally {
         if (active) setLoading(false);
       }
@@ -24,7 +35,7 @@ export default function AccountPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   if (loading) {
     return (
@@ -44,11 +55,23 @@ export default function AccountPage() {
     );
   }
 
+  if (error) {
+    return (
+      <LoadErrorCard
+        title="Could not load account details"
+        description={error}
+        onAction={() => setReloadKey((value) => value + 1)}
+      />
+    );
+  }
+
   if (!profile) {
     return (
-      <div className="text-sm text-destructive">
-        Could not load your profile.
-      </div>
+      <LoadErrorCard
+        title="Profile unavailable"
+        description="The account record was not returned for this session."
+        onAction={() => setReloadKey((value) => value + 1)}
+      />
     );
   }
 

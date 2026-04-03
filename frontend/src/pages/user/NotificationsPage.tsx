@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LoadErrorCard } from "@/components/common/LoadErrorCard";
 import {
   fetchNotifications,
   markNotificationsRead,
@@ -8,14 +9,24 @@ import {
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
     (async () => {
+      if (active) {
+        setLoading(true);
+        setError(null);
+      }
+
       try {
         const data = await fetchNotifications();
         if (!active) return;
         setNotifications(data);
+      } catch {
+        if (!active) return;
+        setError("Notifications could not be loaded.");
       } finally {
         if (active) setLoading(false);
       }
@@ -23,7 +34,7 @@ export default function NotificationsPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   async function handleMarkAllRead() {
     const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id);
@@ -73,6 +84,14 @@ export default function NotificationsPage() {
 
       {loading
         ? loadingSkeleton
+        : error
+        ? (
+          <LoadErrorCard
+            title="Could not load notifications"
+            description={error}
+            onAction={() => setReloadKey((value) => value + 1)}
+          />
+          )
         : notifications.length === 0
         ? (
           <div className="rounded-xl border border-dashed border-border bg-card/40 p-4 text-sm text-muted-foreground">

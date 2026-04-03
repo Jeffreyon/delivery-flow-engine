@@ -32,13 +32,6 @@ async function run() {
     );
 
     await pool.query(
-      `INSERT INTO events (id, type, payload, created_at)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (id) DO NOTHING`,
-      ["evt_1", "user.created", { uid: USER_UID }, now]
-    );
-
-    await pool.query(
       `INSERT INTO devices (id, uid, device_id, last_seen, is_current)
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (id) DO NOTHING`,

@@ -5,6 +5,7 @@ export type AuthResult = {
   authenticated: boolean;
   user: unknown | null;
   profile: unknown | null;
+  isAdmin: boolean;
 };
 
 export const authClient = {
@@ -18,26 +19,21 @@ export const authClient = {
         authenticated: true,
         user: res.data.user ?? null,
         profile: res.data.profile ?? res.data.user ?? null,
+        isAdmin: res.data.isAdmin === true,
       };
     } catch {
-      return { authenticated: false, user: null, profile: null };
+      return {
+        authenticated: false,
+        user: null,
+        profile: null,
+        isAdmin: false,
+      };
     }
   },
 
   async checkIsAdmin(): Promise<boolean> {
-    try {
-      const res = await apiClient.get("/api/auth/me", {
-        withCredentials: true,
-      });
-      const data = res.data ?? {};
-      if (data.isAdmin === true) return true;
-
-      const userRoles = Array.isArray(data.user?.roles) ? data.user.roles : [];
-
-      return userRoles.includes("admin");
-    } catch {
-      return false;
-    }
+    const result = await authClient.getCurrentUser();
+    return result.isAdmin;
   },
 
   async logout(): Promise<void> {

@@ -83,6 +83,8 @@ jobs:
         include:
           - service: backend
             path: backend
+          - service: worker
+            path: backend
           - service: frontend
             path: frontend
     env:

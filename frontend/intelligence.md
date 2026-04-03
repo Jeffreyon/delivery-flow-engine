@@ -1,6 +1,6 @@
 # Frontend Intelligence
 
-This document captures the current reusable frontend guidance for `templates/web_app`.
+This document captures the current reusable frontend guidance for the scaffold.
 
 ## Stack
 - React 19
@@ -16,8 +16,7 @@ This document captures the current reusable frontend guidance for `templates/web
 - `src/main.tsx` wraps `App` with:
   - `ToastProvider`
   - `AppProvider`
-  - `AuthProvider`
-- `AuthProvider` fetches current-user state and syncs it into Zustand.
+- Protected route loaders fetch current-user state and sync it into Zustand before dashboard shells render.
 
 ## Current route model
 - `/` -> landing page
@@ -53,8 +52,7 @@ This document captures the current reusable frontend guidance for `templates/web
 - Brand overlay: `brand/BRAND_CONSTRAINTS.md`
 
 ## Known frontend gaps
-- Mobile navigation is not implemented for the dashboard shells.
-- `AuthProvider` and route loaders duplicate auth bootstrap work.
+- Mobile navigation now exists for the dashboard shells, but secondary pages still need incremental polish.
 - Some pages still need explicit fetch-failure states.
 - Copy quality still includes placeholder wording in places that should be normalized.
 

@@ -1,7 +1,7 @@
 # Frontend Design System
 
 ## Role
-- Reusable UI contract for the `web_app` template.
+- Reusable UI contract for the current scaffold.
 - Route inventory belongs in `docs/UI_ARCHITECTURE.md`.
 - Project-level visual tone belongs in `brand/BRAND_CONSTRAINTS.md`.
 
@@ -28,7 +28,7 @@
 - Error states should be explicit; do not let fetch failures look like successful empty states.
 
 ## Responsive rules
-- Dashboard and admin nav need a mobile-friendly fallback when touched.
+- Dashboard and admin nav should keep the shared mobile dialog-nav fallback when touched.
 - Keep core actions visible without relying on hover.
 - Avoid layouts that only work at desktop widths.
 

@@ -1,15 +1,15 @@
 {
   "schemaVersion": 2,
   "createdAt": "2026-04-02T09:11:23.514Z",
-  "updatedAt": "2026-04-03T07:20:26.021Z",
-  "completedAt": null,
-  "status": "in_progress",
+  "updatedAt": "2026-04-03T13:20:00.000Z",
+  "completedAt": "2026-04-03T13:20:00.000Z",
+  "status": "completed",
   "template": "web_app",
   "projectName": "delivery flow engine",
   "projectSlug": "delivery-flow-engine",
   "outputDir": "C:\\Users\\ELITEBOOK\\Desktop\\projects\\scaffolds\\shared_layer\\apps\\delivery-flow-engine",
   "options": {
-    "githubOwner": null,
+    "githubOwner": "Jeffreyon",
     "githubRepo": "delivery-flow-engine",
     "githubVisibility": "private",
     "railwayWorkspace": "Jeffrey Onuigbo's Projects",
@@ -42,9 +42,9 @@
       "storageUrlPrefix": "http://127.0.0.1:5000/storage",
       "frontendApiUrl": "http://127.0.0.1:4446"
     },
-    "githubOwner": null,
+    "githubOwner": "Jeffreyon",
     "githubRepo": "delivery-flow-engine",
-    "githubRepoFullName": "delivery-flow-engine",
+    "githubRepoFullName": "Jeffreyon/delivery-flow-engine",
     "railwayProjectName": "delivery flow engine"
   },
   "steps": {
@@ -91,17 +91,17 @@
       "lastError": null
     },
     "initializeGitRepo": {
-      "status": "in_progress",
+      "status": "completed",
       "attempts": 2,
       "startedAt": "2026-04-03T07:20:26.019Z",
-      "completedAt": null,
+      "completedAt": "2026-04-03T13:20:00.000Z",
       "lastError": null
     },
     "createGithubRepo": {
-      "status": "pending",
+      "status": "completed",
       "attempts": 1,
       "startedAt": "2026-04-03T06:24:28.124Z",
-      "completedAt": null,
+      "completedAt": "2026-04-03T13:20:00.000Z",
       "lastError": null
     }
   },
@@ -113,11 +113,11 @@
     ]
   },
   "github": {
-    "owner": null,
+    "owner": "Jeffreyon",
     "repo": "delivery-flow-engine",
-    "fullName": null,
+    "fullName": "Jeffreyon/delivery-flow-engine",
     "visibility": "private",
-    "remoteUrl": null,
+    "remoteUrl": "https://github.com/Jeffreyon/delivery-flow-engine.git",
     "syncedSecrets": [],
     "syncedVariables": []
   },
@@ -143,10 +143,29 @@
         "publicDomain": false
       },
       {
+        "name": "Redis",
+        "kind": "database",
+        "path": null,
+        "publicDomain": false
+      },
+      {
         "name": "backend",
         "kind": "empty",
         "path": "backend",
-        "publicDomain": true
+        "publicDomain": true,
+        "startCommand": "npm start"
+      },
+      {
+        "name": "worker",
+        "kind": "empty",
+        "path": "backend",
+        "publicDomain": false,
+        "startCommand": "npm run worker",
+        "requiredEnv": [
+          "REDIS_URL",
+          "BULLMQ_PREFIX",
+          "WORKER_CONCURRENCY"
+        ]
       },
       {
         "name": "frontend",

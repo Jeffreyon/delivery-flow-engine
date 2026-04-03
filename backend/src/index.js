@@ -97,6 +97,11 @@ app.use(
   require("./app/notifications/notifications.controller")
 );
 app.use("/api/events", rateLimiter, require("./app/events/events.controller"));
+app.use(
+  "/api/delivery-events",
+  rateLimiter,
+  require("./app/deliveryEvents/deliveryEvents.controller")
+);
 app.use("/api/roles", require("./app/roles/roles.controller"));
 app.use("/api/settings", require("./app/settings/settings.controller"));
 app.use("/api/devices", rateLimiter, require("./app/devices/devices.controller"));
@@ -104,7 +109,7 @@ app.use("/api/sessions", rateLimiter, require("./app/sessions/sessions.controlle
 
 app.use("/", (req, res) => {
   res.send(
-    "Backend API is up. Postgres-backed routes are available under /api/* (users, notifications, events, roles, settings, devices, sessions)."
+    "Backend API is up. Postgres-backed routes are available under /api/* (users, notifications, events, delivery-events, roles, settings, devices, sessions)."
   );
 });
 

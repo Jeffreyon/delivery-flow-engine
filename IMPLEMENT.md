@@ -11,10 +11,14 @@
 - frontend/docs/DESIGN_SYSTEM.md
 - frontend/docs/MOBBIN_DESIGN_WORKFLOW.md
 - docs/IMPLEMENTATION_PLAN.md
+- docs/slices/README.md and the active file under `docs/slices/` when implementing a delivery slice
 - docs/MIGRATION_WORKFLOW.md when schema, bootstrap, CI, or deploy behavior is touched
 - frontend/intelligence.md when frontend structure or reusable UI guidance is touched
 - brand/BRAND_CONSTRAINTS.md when visual tone or branding is touched
 - docs/RELEASE_CHECKLIST.md
+- docs/STAGING_CHECKLIST.md when staging or deploy follow-through is in scope
+- docs/PR_TEMPLATE.md when PR publishing or handoff is in scope
+- docs/SLICE_IMPLEMENTATION_TEMPLATE.md and docs/SLICE_TESTING_GUIDE.md when authoring or refreshing slice packs
 
 ## Workflow
 1. Reduce the request to one bounded runtime or harness area.
@@ -24,8 +28,10 @@
 5. Make the smallest code or config fixes needed to keep the docs and harness truthful.
 6. Run a repo consistency audit across the touched files.
 7. Run the available validation commands.
-8. Update `CHANGELOG.md` when the change materially affects how the template should be used or understood.
-9. Prepare PR or deploy follow-through only when explicitly requested.
+8. Apply `docs/RELEASE_CHECKLIST.md` to the touched slice scope before handoff.
+9. If staging or deploy follow-through is requested, apply `docs/STAGING_CHECKLIST.md` and report unavailable evidence explicitly.
+10. If PR or publish follow-through is requested, prepare the handoff from `docs/PR_TEMPLATE.md`.
+11. Update `CHANGELOG.md` when the change materially affects how the template should be used or understood.
 
 ## Skill boundaries
 - `repo-consistency-auditor` for drift review

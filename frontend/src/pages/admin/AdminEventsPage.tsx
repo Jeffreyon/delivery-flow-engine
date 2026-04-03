@@ -1,17 +1,28 @@
 import { useEffect, useState } from "react";
-import { fetchEvents, type EventItem } from "@/services/admin.api";
+import { LoadErrorCard } from "@/components/common/LoadErrorCard";
+import { fetchDeliveryEvents, type DeliveryEventItem } from "@/services/admin.api";
 
 export default function AdminEventsPage() {
-  const [events, setEvents] = useState<EventItem[]>([]);
+  const [deliveryEvents, setDeliveryEvents] = useState<DeliveryEventItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
     (async () => {
+      if (active) {
+        setLoading(true);
+        setError(null);
+      }
+
       try {
-        const data = await fetchEvents();
+        const data = await fetchDeliveryEvents();
         if (!active) return;
-        setEvents(data);
+        setDeliveryEvents(data);
+      } catch {
+        if (!active) return;
+        setError("Delivery event records could not be loaded.");
       } finally {
         if (active) setLoading(false);
       }
@@ -19,7 +30,7 @@ export default function AdminEventsPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   if (loading) {
     return (
@@ -37,18 +48,28 @@ export default function AdminEventsPage() {
     );
   }
 
+  if (error) {
+    return (
+      <LoadErrorCard
+        title="Could not load delivery events"
+        description={error}
+        onAction={() => setReloadKey((value) => value + 1)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-base font-semibold">Events</h2>
+        <h2 className="text-base font-semibold">Delivery events</h2>
         <p className="text-sm text-muted-foreground">
-          Recent system events and audit log entries.
+          Recent delivery event records and operational history.
         </p>
       </div>
 
-      {events.length === 0 ? (
+      {deliveryEvents.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-card/40 p-4 text-sm text-muted-foreground">
-          No events have been recorded yet.
+          No delivery events have been recorded yet.
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -60,7 +81,7 @@ export default function AdminEventsPage() {
               </tr>
             </thead>
             <tbody>
-              {events.map((evt) => (
+              {deliveryEvents.map((evt) => (
                 <tr
                   key={evt.id}
                   className="border-t border-border/60 hover:bg-muted/40 transition-colors"
@@ -82,4 +103,3 @@ export default function AdminEventsPage() {
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
-# Web App Template
+# Delivery Flow Engine Scaffold
 
-`templates/web_app` is a Phase 0 workspace/account/admin scaffold.
+`delivery-flow-engine` currently ships a Phase 0 workspace/account/admin scaffold that serves as the starting point for Delivery Flow Engine planning.
 
 Current runtime coverage:
 - auth
@@ -8,6 +8,7 @@ Current runtime coverage:
 - roles
 - notifications
 - events
+- delivery-events
 - devices
 - sessions
 - settings
@@ -15,6 +16,7 @@ Current runtime coverage:
 
 Current stack:
 - backend: Express 5 + Postgres + raw SQL repositories
+- async runtime: BullMQ + `ioredis` queue bootstrap with a separate worker entrypoint
 - frontend: React 19 + Vite + TypeScript + React Router
 
 ## Local demo accounts
@@ -29,8 +31,9 @@ The seed is idempotent, so rerunning `npm run db:seed` updates those records ins
 ## Current known Phase 0 gaps
 
 - API and auth contracts are only partially hardened; see `docs/GAP_ANALYSIS.md` before widening runtime behavior.
-- mobile dashboard and admin navigation still need a better small-screen pattern.
+- delivery-domain runtime modules, tracking and incident schema, and actual queue-backed jobs still need to be implemented on top of the scaffold, locked `/api/v1` contract, and foundational delivery schema.
 - backend lint, typecheck, and build scripts are still unavailable.
+- scaffolder and deploy metadata should be read from `.scaffold/project.json` and `.github/workflows/railway-deploy.yml`, not a missing root `template.json`.
 
 ## Start here
 
@@ -41,6 +44,7 @@ The seed is idempotent, so rerunning `npm run db:seed` updates those records ins
 - `docs/DB_SCHEMA.md`
 - `docs/API_SPEC.md`
 - `docs/UI_ARCHITECTURE.md`
+- `docs/slices/README.md`
 
 ## Frontend guidance
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LoadErrorCard } from "@/components/common/LoadErrorCard";
 import {
   fetchAuthMe,
   fetchDevices,
@@ -32,10 +33,17 @@ const initialState: DashboardState = {
 export default function DashboardHome() {
   const [state, setState] = useState<DashboardState>(initialState);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
     (async () => {
+      if (active) {
+        setLoading(true);
+        setError(null);
+      }
+
       try {
         const [auth, notifications, devices, sessions, settings] =
           await Promise.all([
@@ -56,6 +64,11 @@ export default function DashboardHome() {
           sessions,
           settings,
         });
+      } catch {
+        if (!active) return;
+        setError(
+          "Dashboard data could not be loaded right now. Check the backend connection and try again."
+        );
       } finally {
         if (active) setLoading(false);
       }
@@ -63,7 +76,7 @@ export default function DashboardHome() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const unreadNotifications = state.notifications.filter((n) => !n.read);
 
@@ -106,6 +119,16 @@ export default function DashboardHome() {
     );
   }
 
+  if (error) {
+    return (
+      <LoadErrorCard
+        title="Could not load the dashboard"
+        description={error}
+        onAction={() => setReloadKey((value) => value + 1)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <section className="grid gap-4 md:grid-cols-3">
@@ -114,11 +137,11 @@ export default function DashboardHome() {
             Welcome{state.me?.displayName ? `, ${state.me.displayName}` : ""}
           </h2>
           <p className="text-sm text-muted-foreground">
-            This overview pulls live data from your account and workspace APIs.
+            This overview brings together your account, device, session, and notification activity.
           </p>
           {state.settings?.supportEmail && (
             <p className="mt-3 text-xs text-muted-foreground">
-              Need help? Contact{" "}
+              Need help with access or settings? Contact{" "}
               <span className="font-medium text-foreground">
                 {state.settings.supportEmail}
               </span>

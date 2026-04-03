@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { apiClient } from "@/lib/apiClient";
 import { clearAuthToken } from "@/lib/authToken";
 import { useProfileStore } from "@/hooks/useProfile";
+import { MobileNavDialog, type MobileNavItem } from "@/components/layout/MobileNavDialog";
 import {
   LayoutDashboard,
   Users,
@@ -17,8 +18,33 @@ import {
 export default function AdminDashboardLayout() {
   const navigate = useNavigate();
   const profile = useProfileStore((s) => s.profile);
+  const clearProfile = useProfileStore((s) => s.clearProfile);
   const [loggingOut, setLoggingOut] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const navItems: MobileNavItem[] = [
+    {
+      to: "/admin/dashboard",
+      label: "Overview",
+      icon: <LayoutDashboard className="h-4 w-4" />,
+      end: true,
+    },
+    {
+      to: "/admin/dashboard/users",
+      label: "Users",
+      icon: <Users className="h-4 w-4" />,
+    },
+    {
+      to: "/admin/dashboard/events",
+      label: "Delivery events",
+      icon: <Activity className="h-4 w-4" />,
+    },
+    {
+      to: "/admin/dashboard/roles",
+      label: "Roles",
+      icon: <ShieldCheck className="h-4 w-4" />,
+    },
+  ];
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -32,7 +58,7 @@ export default function AdminDashboardLayout() {
       // non-fatal
     } finally {
       clearAuthToken();
-      useProfileStore.getState().setProfile(null);
+      clearProfile();
       setLoggingOut(false);
       navigate("/auth/login", { replace: true });
     }
@@ -84,7 +110,7 @@ export default function AdminDashboardLayout() {
           />
           <AdminNavLink
             to="/admin/dashboard/events"
-            label="Events"
+            label="Delivery events"
             icon={<Activity className="h-3.5 w-3.5" />}
             collapsed={sidebarCollapsed}
           />
@@ -158,11 +184,28 @@ export default function AdminDashboardLayout() {
 
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="flex items-center justify-between border-b border-border px-4 py-3 md:px-6">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-sm font-semibold">Admin dashboard</h1>
-            <p className="text-xs text-muted-foreground">
-              Manage users, roles, and system events.
-            </p>
+          <div className="flex items-center gap-3">
+            <MobileNavDialog
+              title="Admin navigation"
+              description="Move between overview, users, roles, and delivery events."
+              homeHref="/admin/dashboard"
+              brandLabel="Admin panel"
+              profilePrimary={profile?.displayName || profile?.email}
+              profileSecondary={profile?.email}
+              profileMeta="Admin"
+              navItems={navItems}
+              loggingOut={loggingOut}
+              onLogout={handleLogout}
+            />
+            <div className="flex flex-col gap-1">
+              <h1 className="text-sm font-semibold">Admin dashboard</h1>
+              <p className="text-xs text-muted-foreground">
+                Manage users, roles, and delivery event records.
+              </p>
+            </div>
+          </div>
+          <div className="hidden text-xs text-muted-foreground md:block">
+            {profile?.email ?? "Administrator"}
           </div>
         </header>
         <section className="flex-1 px-4 py-4 md:px-6 md:py-6 overflow-y-auto">

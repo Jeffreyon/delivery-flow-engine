@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useProfileStore } from "@/hooks/useProfile";
 import { clearAuthToken } from "@/lib/authToken";
 import { apiClient } from "@/lib/apiClient";
+import { MobileNavDialog, type MobileNavItem } from "@/components/layout/MobileNavDialog";
 import {
   LayoutDashboard,
   Bell,
@@ -17,8 +18,33 @@ import {
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const profile = useProfileStore((s) => s.profile);
+  const clearProfile = useProfileStore((s) => s.clearProfile);
   const [loggingOut, setLoggingOut] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const navItems: MobileNavItem[] = [
+    {
+      to: "/dashboard",
+      label: "Overview",
+      icon: <LayoutDashboard className="h-4 w-4" />,
+      end: true,
+    },
+    {
+      to: "/dashboard/notifications",
+      label: "Notifications",
+      icon: <Bell className="h-4 w-4" />,
+    },
+    {
+      to: "/dashboard/security",
+      label: "Security",
+      icon: <Shield className="h-4 w-4" />,
+    },
+    {
+      to: "/dashboard/account",
+      label: "Account",
+      icon: <UserIcon className="h-4 w-4" />,
+    },
+  ];
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -34,7 +60,7 @@ export default function DashboardLayout() {
       // ignore best-effort errors
     } finally {
       clearAuthToken();
-      useProfileStore.getState().setProfile(null);
+      clearProfile();
       setLoggingOut(false);
       navigate("/auth/login", { replace: true });
     }
@@ -157,11 +183,27 @@ export default function DashboardLayout() {
 
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="flex items-center justify-between border-b border-border px-4 py-3 md:px-6">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-sm font-semibold">Dashboard</h1>
-            <p className="text-xs text-muted-foreground">
-              Overview of your account, security, and activity.
-            </p>
+          <div className="flex items-center gap-3">
+            <MobileNavDialog
+              title="Workspace navigation"
+              description="Move between your account, notifications, and security views."
+              homeHref="/dashboard"
+              brandLabel="Workspace"
+              profilePrimary={profile?.displayName || profile?.email}
+              profileSecondary={profile?.email}
+              navItems={navItems}
+              loggingOut={loggingOut}
+              onLogout={handleLogout}
+            />
+            <div className="flex flex-col gap-1">
+              <h1 className="text-sm font-semibold">Dashboard</h1>
+              <p className="text-xs text-muted-foreground">
+                Overview of your account, security, and activity.
+              </p>
+            </div>
+          </div>
+          <div className="hidden text-xs text-muted-foreground md:block">
+            {profile?.email ?? "Signed in"}
           </div>
         </header>
         <section className="flex-1 px-4 py-4 md:px-6 md:py-6 overflow-y-auto">

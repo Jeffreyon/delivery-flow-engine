@@ -1,17 +1,28 @@
 import { useEffect, useState } from "react";
+import { LoadErrorCard } from "@/components/common/LoadErrorCard";
 import { fetchAllUsers, type AdminUser } from "@/services/admin.api";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
     (async () => {
+      if (active) {
+        setLoading(true);
+        setError(null);
+      }
+
       try {
         const data = await fetchAllUsers();
         if (!active) return;
         setUsers(data);
+      } catch {
+        if (!active) return;
+        setError("User records could not be loaded.");
       } finally {
         if (active) setLoading(false);
       }
@@ -19,7 +30,7 @@ export default function AdminUsersPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   if (loading) {
     return (
@@ -37,12 +48,22 @@ export default function AdminUsersPage() {
     );
   }
 
+  if (error) {
+    return (
+      <LoadErrorCard
+        title="Could not load users"
+        description={error}
+        onAction={() => setReloadKey((value) => value + 1)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div>
         <h2 className="text-base font-semibold">Users</h2>
         <p className="text-sm text-muted-foreground">
-          All users in this workspace.
+          Review the current workspace accounts and their assigned roles.
         </p>
       </div>
 
@@ -75,7 +96,7 @@ export default function AdminUsersPage() {
                     </div>
                   </td>
                   <td className="px-4 py-2 align-top text-sm">
-                    {user.email ?? "—"}
+                    {user.email ?? "Unavailable"}
                   </td>
                   <td className="px-4 py-2 align-top text-xs">
                     {Array.isArray(user.roles) && user.roles.length > 0 ? (
@@ -102,4 +123,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-

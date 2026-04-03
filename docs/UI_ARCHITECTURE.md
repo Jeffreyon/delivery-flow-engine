@@ -1,7 +1,7 @@
 # UI Architecture
 
 ## Purpose
-- Record current UI runtime truth for `web_app`.
+- Record current UI runtime truth for the current scaffold.
 - Keep reusable guidance in `frontend/docs/DESIGN_SYSTEM.md` and `frontend/intelligence.md`.
 
 ## Surfaces
@@ -15,8 +15,8 @@
 |---|---|---|---|---|
 | Public | `/` | none | none | Placeholder landing surface |
 | Auth | `/auth/*` | none | `AuthLayout` | Form flows only |
-| User | `/dashboard/*` | `requireAuth` | `DashboardLayout` | Sidebar hidden on small screens |
-| Admin | `/admin/dashboard/*` | `adminLoader` | `AdminDashboardLayout` | Separate admin nav |
+| User | `/dashboard/*` | `requireAuth` | `DashboardLayout` | Desktop sidebar plus mobile dialog nav |
+| Admin | `/admin/dashboard/*` | `adminLoader` | `AdminDashboardLayout` | Separate admin nav with matching mobile fallback |
 | Fallback | `*` | none | `ErrorPage` | 404 screen |
 
 ## Current UI coverage
@@ -24,7 +24,7 @@
 |---|---|---|
 | Auth flows | Existing | Login, signup, forgot-password, verify-email |
 | User account | Existing | Overview, account, notifications, security |
-| Admin operations | Partial | Overview, users, events, roles |
+| Admin operations | Partial | Overview, users, delivery events, roles |
 | Settings UI | Missing | Only backend global settings read exists |
 | Write-oriented admin forms | Missing | No create or edit workflows for admin entities |
 
@@ -36,7 +36,6 @@
 - Cross-cutting providers:
   - `ToastProvider`
   - `AppProvider`
-  - `AuthProvider`
 - Data layer:
   - route loaders for auth guards
   - page-local `useEffect`
@@ -52,7 +51,7 @@
   - dashed or muted bordered cards with short guidance
 - Error:
   - auth pages show inline messages plus toast feedback
-  - dashboard and admin pages still under-specify fetch failures on some routes
+  - touched overview pages should show explicit fetch-failure cards
 
 ## Current visual baseline
 - Theme:
@@ -68,7 +67,7 @@
 ## Current state, gap, recommended target
 | Current state | Gap | Recommended target |
 |---|---|---|
-| User and admin dashboard shells are implemented | Mobile navigation is still weak | Add a mobile drawer or sheet pattern in a later hardening cut |
-| `AuthProvider` and route loaders both fetch auth state | Duplicate boot-time calls increase noise | Consolidate auth bootstrap ownership later |
+| User and admin dashboard shells are implemented | The mobile fallback should stay aligned across both trees | Keep one dialog-nav pattern instead of diverging early |
+| Protected route loaders own auth bootstrap | Public routes do not pre-hydrate auth state | Keep loader-owned bootstrap until a public auth-aware surface needs more |
 | Pages mix primitives and raw controls | UI composition is inconsistent | Prefer shared primitives when touching a page |
-| Dashboard copy and error handling are uneven | UX polish still carries placeholder residue | Tighten copy and explicit error states incrementally |
+| Dashboard copy and error handling are improving incrementally | Some secondary routes still need cleanup | Tighten touched pages without broad UI rewrites |

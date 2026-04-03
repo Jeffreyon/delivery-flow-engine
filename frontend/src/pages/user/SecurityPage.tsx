@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { LoadErrorCard } from "@/components/common/LoadErrorCard";
 import {
   fetchDevices,
   fetchSessions,
@@ -10,15 +11,25 @@ export default function SecurityPage() {
   const [devices, setDevices] = useState<DeviceItem[]>([]);
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
     (async () => {
+      if (active) {
+        setLoading(true);
+        setError(null);
+      }
+
       try {
         const [d, s] = await Promise.all([fetchDevices(), fetchSessions()]);
         if (!active) return;
         setDevices(d);
         setSessions(s);
+      } catch {
+        if (!active) return;
+        setError("Device and session history could not be loaded.");
       } finally {
         if (active) setLoading(false);
       }
@@ -26,7 +37,7 @@ export default function SecurityPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const sortedDevices = useMemo(
     () =>
@@ -61,6 +72,16 @@ export default function SecurityPage() {
           </section>
         </div>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <LoadErrorCard
+        title="Could not load security activity"
+        description={error}
+        onAction={() => setReloadKey((value) => value + 1)}
+      />
     );
   }
 

@@ -3,35 +3,33 @@ import { useProfileStore } from "@/hooks/useProfile";
 import { authClient } from "@/services/authClient";
 import type { Profile } from "@/types/profile";
 
+function syncAuthState(result: {
+  authenticated: boolean;
+  profile: unknown | null;
+}) {
+  useProfileStore.getState().setAuthenticated(result.authenticated);
+  useProfileStore.getState().setProfile(result.profile as Profile | null);
+}
+
 export async function requireAuth() {
   const result = await authClient.getCurrentUser();
+  syncAuthState(result);
 
   if (!result.authenticated || !result.user) {
+    useProfileStore.getState().clearProfile();
     return redirect("/auth/login");
-  }
-
-  try {
-    useProfileStore.getState().setAuthenticated(true);
-    useProfileStore.getState().setProfile(result.profile as Profile | null);
-  } catch {
-    // non-fatal
   }
 
   return { user: result.profile };
 }
 
 export async function adminLoader() {
-  const isAdmin = await authClient.checkIsAdmin();
-  if (!isAdmin) {
-    return redirect("/auth/login");
-  }
-
   const result = await authClient.getCurrentUser();
+  syncAuthState(result);
 
-  try {
-    useProfileStore.getState().setProfile(result.profile as Profile | null);
-  } catch {
-    // non-fatal
+  if (!result.authenticated || !result.user || !result.isAdmin) {
+    useProfileStore.getState().clearProfile();
+    return redirect("/auth/login");
   }
 
   return { profile: result.profile };
