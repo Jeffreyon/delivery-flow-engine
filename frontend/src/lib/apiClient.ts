@@ -1,7 +1,8 @@
 import axios from "axios";
 import { clearAuthToken, getAuthToken } from "@/lib/authToken";
+import { assertApiBaseUrl, getApiBaseUrl } from "@/lib/runtimeConfig";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = getApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -10,6 +11,9 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
+  config.baseURL = config.baseURL ?? API_BASE_URL;
+  assertApiBaseUrl(config.baseURL);
+
   const token = getAuthToken();
 
   // Keep sending Authorization header if a token

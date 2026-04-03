@@ -34,6 +34,12 @@ The seed is idempotent, so rerunning `npm run db:seed` updates those records ins
 - Configure GitHub Actions secrets `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` to activate it.
 - Demo credentials stay local and staging-only. Production should rely on the bootstrap-admin contract instead of `admin@example.com / password123`.
 
+## Frontend API runtime config
+
+- Local frontend development reads `VITE_API_URL` from `frontend/.env.local`; start from `frontend/.env.local.example`.
+- Railway frontend deploys now generate a runtime `runtime-config.js` file from the `frontend` service `VITE_API_URL` variable when the container boots.
+- Keep `VITE_API_URL` pointed at the matching backend public domain in both `staging` and `production`, or auth and other `/api/*` requests will fail closed instead of falling back to the frontend origin.
+
 ## Current known Phase 0 gaps
 
 - API and auth contracts are only partially hardened; see `docs/GAP_ANALYSIS.md` before widening runtime behavior.

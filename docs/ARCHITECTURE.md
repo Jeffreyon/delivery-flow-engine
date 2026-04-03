@@ -70,6 +70,8 @@ This section is a recommended target, not current runtime truth.
 - `main.tsx` wraps the app with:
   - `ToastProvider`
   - `AppProvider`
+- The frontend now reads its API base from `window.__APP_CONFIG__.VITE_API_URL` first, then falls back to build-time `import.meta.env.VITE_API_URL`.
+- Railway frontend containers generate `dist/runtime-config.js` at startup so the same image can boot against different backend domains per environment.
 - Protected route loaders own auth bootstrap for dashboard and admin trees.
 - Pages mostly fetch directly inside `useEffect` rather than through a shared cache layer.
 
@@ -107,6 +109,7 @@ This section is a recommended target, not current runtime truth.
 |---|---|---|
 | Generic workspace runtime is implemented | Older docs described broader or different surfaces | Keep architecture docs centered on auth, dashboards, notifications, settings, and admin operations |
 | The migration runner is present and `db:init` delegates to it | Production bootstrap can otherwise be mistaken for demo seeding | Keep architecture docs anchored to the migration runner, the bootstrap-admin seed contract, and the current Railway workflow |
+| The frontend now fails closed when `VITE_API_URL` is missing and Railway boot writes runtime config from the `frontend` service env | Older static builds could silently post `/api/*` requests back to the frontend origin when `VITE_API_URL` was absent at build time | Keep runtime API-base injection explicit so one frontend image can target the matching backend domain per Railway environment |
 | Route handlers still return mostly raw JSON payloads | The API is not yet uniformly shaped | Harden deliberately instead of documenting an idealized contract |
 | `POST /api/events` and `POST /api/delivery-events` are narrowed to admin access | Signed or internal-only ingestion is still undefined, and lifecycle-owned producers do not exist yet | Keep both write surfaces narrow until a clearer producer model exists |
 | The live backend has only unversioned scaffold routes today | The first delivery route boundary and actor matrix would otherwise be inferred ad hoc during implementation | Start delivery routes under `/api/v1` and keep the milestone-1 actor model explicit in docs before runtime modules land |

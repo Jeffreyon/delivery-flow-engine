@@ -9,6 +9,7 @@
 - Ensure `RAILWAY_API_TOKEN` is available before GitHub provisioning.
 - Set GitHub Actions secrets `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` before relying on production or staging admin login.
 - Review `.scaffold/project.json` and `.github/workflows/railway-deploy.yml` before changing deploy topology so service names, environment mapping, and migration behavior stay aligned.
+- Keep `VITE_API_URL` aligned on the Railway `frontend` service in each environment; the frontend container now writes `runtime-config.js` from that env var at boot instead of baking the API domain into the static build.
 - The shared backend Dockerfile now routes Railway startup by `RAILWAY_SERVICE_NAME`, so the `worker` service can deploy from the `backend` path without a separate Dockerfile.
 - Keep `REDIS_URL`, `BULLMQ_PREFIX`, and `WORKER_CONCURRENCY` aligned on the Railway `worker` service whenever the queue runtime changes.
 - Treat root-manifest or install-token guidance as unavailable unless the runtime and docs in this repo explicitly add it later.

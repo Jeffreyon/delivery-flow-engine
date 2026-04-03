@@ -5,6 +5,7 @@ This file records material changes to how the template should be understood or u
 ## 2026-04-03
 
 ### Changed
+- Fixed the frontend Railway auth wiring so the container now generates `runtime-config.js` from `VITE_API_URL` at boot, API calls fail closed when that env var is missing, and login only succeeds after a real authenticated `/api/auth/me` response.
 - Added an environment-driven `db:seed:bootstrap-admin` flow so staging and production can provision one scaffold admin without relying on demo credentials, and wired that contract into the Railway deploy workflow and scaffold docs.
 - Reframed `docs/GAP_ANALYSIS.md` around the PRD-to-runtime gap so it now separates scaffold hardening from Delivery Flow Engine alignment work.
 - Rewrote `docs/IMPLEMENTATION_PLAN.md` into a docs-first slice queue with dependency ordering, blocking questions, and next agentic doc actions.

@@ -8,6 +8,21 @@ export type AuthResult = {
   isAdmin: boolean;
 };
 
+function isAuthPayload(
+  value: unknown
+): value is {
+  uid?: string;
+  user?: unknown;
+  profile?: unknown;
+  isAdmin?: boolean;
+} {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    ("user" in value || "uid" in value)
+  );
+}
+
 export const authClient = {
   async getCurrentUser(): Promise<AuthResult> {
     try {
@@ -15,10 +30,19 @@ export const authClient = {
         withCredentials: true,
       });
 
+      if (!isAuthPayload(res.data)) {
+        throw new Error("Invalid auth payload");
+      }
+
+      const user = res.data.user ?? null;
+      const profile = res.data.profile ?? user;
+      const authenticated =
+        user !== null || typeof res.data.uid === "string";
+
       return {
-        authenticated: true,
-        user: res.data.user ?? null,
-        profile: res.data.profile ?? res.data.user ?? null,
+        authenticated,
+        user,
+        profile,
         isAdmin: res.data.isAdmin === true,
       };
     } catch {

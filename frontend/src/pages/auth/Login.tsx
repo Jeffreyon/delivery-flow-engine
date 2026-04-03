@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { setAuthToken } from "@/lib/authToken";
+import { clearAuthToken, setAuthToken } from "@/lib/authToken";
+import { MISSING_API_BASE_URL_MESSAGE } from "@/lib/runtimeConfig";
 import { login } from "@/services/auth.api";
 import { authClient } from "@/services/authClient";
 import { AuthLayout } from "@/components/layout/AuthLayout";
@@ -31,8 +32,12 @@ export default function Login() {
         setAuthToken(res.idToken);
       }
 
-      // Decide destination based on admin status.
-      const isAdmin = await authClient.checkIsAdmin();
+      const authResult = await authClient.getCurrentUser();
+      if (!authResult.authenticated || !authResult.user) {
+        throw new Error("Authenticated session was not established.");
+      }
+
+      const isAdmin = authResult.isAdmin;
       success(
         isAdmin ? "Welcome back, admin." : "Welcome back.",
         "Signed in"
@@ -41,9 +46,16 @@ export default function Login() {
         replace: true,
       });
     } catch (err) {
+      clearAuthToken();
       console.error(err);
+
+      const message =
+        err instanceof Error && err.message === MISSING_API_BASE_URL_MESSAGE
+          ? "Login is unavailable because this frontend deployment is not connected to the API yet."
+          : "Login failed. Check your credentials and try again.";
+
       showErrorToast(
-        "Login failed. Check your credentials and try again.",
+        message,
         "Login failed"
       );
     } finally {
