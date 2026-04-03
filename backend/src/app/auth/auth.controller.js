@@ -15,6 +15,7 @@ const SESSION_COOKIE_MAX_AGE_MS =
 const SESSION_COOKIE_SECURE =
   (process.env.SESSION_COOKIE_SECURE || "false").toLowerCase() === "true";
 const SESSION_COOKIE_DOMAIN = process.env.SESSION_COOKIE_DOMAIN || undefined;
+const SESSION_COOKIE_SAME_SITE = SESSION_COOKIE_SECURE ? "none" : "lax";
 
 // POST /api/auth/signup
 router.post(
@@ -68,7 +69,7 @@ router.post(
     const cookieOptions = {
       httpOnly: true,
       secure: SESSION_COOKIE_SECURE,
-      sameSite: "lax",
+      sameSite: SESSION_COOKIE_SAME_SITE,
       maxAge: expiresIn,
       path: "/",
     };
@@ -146,7 +147,7 @@ router.post(
     const clearOptions = {
       httpOnly: true,
       secure: SESSION_COOKIE_SECURE,
-      sameSite: "lax",
+      sameSite: SESSION_COOKIE_SAME_SITE,
       path: "/",
     };
     if (SESSION_COOKIE_DOMAIN) {

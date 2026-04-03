@@ -61,6 +61,7 @@ This section is a recommended target, not current runtime truth.
 ## Auth and authorization model
 - Login returns an `idToken`.
 - The backend also mints a session cookie from that token.
+- Secure cross-origin deployments use `SameSite=None`; local insecure cookie flows stay `SameSite=Lax`.
 - Protected routes accept the cookie and still allow bearer fallback.
 - RBAC is derived from `users.roles` plus `roles.permissions`.
 - `req.authz.roles` contains role documents, not only role ids.

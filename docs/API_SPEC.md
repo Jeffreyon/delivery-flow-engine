@@ -56,6 +56,7 @@
 - `POST /api/events` now requires admin auth.
 - `POST /api/delivery-events` now requires admin auth.
 - `POST /api/delivery-events` rejects non-delivery type namespaces such as `user.*` or `auth.*`.
+- When `SESSION_COOKIE_SECURE=true`, auth cookies are issued with `SameSite=None` so the Railway frontend can use credentialed cross-origin requests; local insecure cookie flows stay `SameSite=Lax`.
 
 ## Current state, gap, recommended target
 | Current state | Gap | Recommended target |

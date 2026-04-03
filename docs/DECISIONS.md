@@ -6,7 +6,7 @@
 | Frontend routing | Separate public, auth, user, and admin trees | Clear shell and auth boundaries | No storefront tree |
 | Backend module shape | Controller, service, repository split | Keeps raw SQL code organized | Used across all live modules |
 | Data access | Shared `query()` helper with raw SQL | Low abstraction overhead | No ORM |
-| Auth transport | Session cookie plus bearer fallback | Local-first auth with simple protected-route support | Login still returns `idToken` |
+| Auth transport | Session cookie plus bearer fallback | Local-first auth with simple protected-route support | Login still returns `idToken`, and secure cross-origin deployments use `SameSite=None` on the session cookie while local insecure flows stay `Lax` |
 | RBAC model | `users.roles` plus `roles.permissions` | Simple admin and self gating | `users.roles` is an array of role ids; no DB FK |
 | Driver actor model | `drivers` will extend `users` with a delivery profile | Reuses the existing auth and RBAC foundation for delivery actors | Driver access still flows through role membership |
 | Delivery API versioning | New delivery-domain routes will start under `/api/v1`, while scaffold routes remain under `/api/*` | Avoids retrofitting the current scaffold contract just to introduce delivery modules | Do not add unversioned clones of delivery routes in milestone 1 |
