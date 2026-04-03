@@ -11,6 +11,7 @@
     "db:init": "node scripts/initDb.js",
     "db:migrate": "node scripts/migrate.js",
     "db:seed": "node scripts/seedLocal.js",
+    "db:seed:bootstrap-admin": "node scripts/seedBootstrapAdmin.js",
     "db:seed:demo": "node scripts/seedDemo.js",
     "test": "jest --runInBand"
   },

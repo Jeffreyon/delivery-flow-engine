@@ -7,6 +7,7 @@
 - Branch pushes deploy to the mapped Railway environments.
 - Keep required GitHub Actions secrets in the scaffolder root `.env`; the scaffold syncs them during GitHub provisioning.
 - Ensure `RAILWAY_API_TOKEN` is available before GitHub provisioning.
+- Set GitHub Actions secrets `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` before relying on production or staging admin login.
 - Review `.scaffold/project.json` and `.github/workflows/railway-deploy.yml` before changing deploy topology so service names, environment mapping, and migration behavior stay aligned.
 - The shared backend Dockerfile now routes Railway startup by `RAILWAY_SERVICE_NAME`, so the `worker` service can deploy from the `backend` path without a separate Dockerfile.
 - Keep `REDIS_URL`, `BULLMQ_PREFIX`, and `WORKER_CONCURRENCY` aligned on the Railway `worker` service whenever the queue runtime changes.

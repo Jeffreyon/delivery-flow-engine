@@ -9,7 +9,7 @@ Use this guide with each slice pack to keep validation, staging proof, and PR ha
 
 ## Schema slices
 - Record whether `npm run db:migrate` was run.
-- If seed behavior changed, record whether `npm run db:seed` or `npm run db:seed:demo` was run.
+- If seed behavior changed, record whether `npm run db:seed`, `npm run db:seed:bootstrap-admin`, or `npm run db:seed:demo` was run.
 - Do not claim migration or seed execution unless it actually happened.
 
 ## Staging proof

@@ -20,10 +20,7 @@ const DEMO_ACCOUNTS = [
   },
 ];
 
-async function seedDemoAccounts(pool, options = {}) {
-  const now = options.now || Date.now();
-  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
-
+async function ensureScaffoldRoles(pool) {
   await pool.query(
     `INSERT INTO roles (id, description, permissions)
      VALUES ($1, $2, $3)
@@ -36,6 +33,13 @@ async function seedDemoAccounts(pool, options = {}) {
      ON CONFLICT (id) DO NOTHING`,
     ["user", "Standard user", ["read:self", "write:self"]]
   );
+}
+
+async function seedDemoAccounts(pool, options = {}) {
+  const now = options.now || Date.now();
+  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
+
+  await ensureScaffoldRoles(pool);
 
   for (const account of DEMO_ACCOUNTS) {
     await pool.query(
@@ -73,5 +77,6 @@ module.exports = {
   USER_UID,
   DEMO_PASSWORD,
   DEMO_ACCOUNTS,
+  ensureScaffoldRoles,
   seedDemoAccounts,
 };

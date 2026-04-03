@@ -28,6 +28,12 @@ Running `backend/scripts/seedLocal.js` through `npm run db:seed` creates two loc
 
 The seed is idempotent, so rerunning `npm run db:seed` updates those records instead of duplicating them.
 
+## Remote bootstrap admin
+
+- `main` and `staging` deploys can seed one idempotent bootstrap admin through `npm run db:seed:bootstrap-admin`.
+- Configure GitHub Actions secrets `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` to activate it.
+- Demo credentials stay local and staging-only. Production should rely on the bootstrap-admin contract instead of `admin@example.com / password123`.
+
 ## Current known Phase 0 gaps
 
 - API and auth contracts are only partially hardened; see `docs/GAP_ANALYSIS.md` before widening runtime behavior.

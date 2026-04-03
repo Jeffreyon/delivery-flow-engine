@@ -179,7 +179,9 @@
     "provider": "github-actions",
     "workflowFile": ".github/workflows/railway-deploy.yml",
     "secrets": [
-      "RAILWAY_API_TOKEN"
+      "RAILWAY_API_TOKEN",
+      "BOOTSTRAP_ADMIN_EMAIL",
+      "BOOTSTRAP_ADMIN_PASSWORD"
     ],
     "variables": [
       {

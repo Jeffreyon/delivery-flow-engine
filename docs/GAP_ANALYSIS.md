@@ -25,7 +25,7 @@
 - Schema path:
   - primary command `npm run db:migrate`
   - bootstrap alias `npm run db:init`
-  - seed commands `npm run db:seed` and `npm run db:seed:demo`
+  - seed commands `npm run db:seed`, `npm run db:seed:bootstrap-admin`, and `npm run db:seed:demo`
 - Validation:
   - frontend lint, typecheck, tests, and build exist
   - backend exposes tests only
@@ -53,7 +53,7 @@
 | Validation coverage | Frontend lint, typecheck, tests, and build exist; backend only exposes tests | Backend lint, typecheck, and build scripts are unavailable | Keep reporting this honestly until scripts are added |
 
 ## What was resolved
-- The backend package now exposes `db:migrate` and `db:seed:demo`.
+- The backend package now exposes `db:migrate`, `db:seed:bootstrap-admin`, and `db:seed:demo`.
 - `db:init` now delegates to the migration runner instead of maintaining a separate schema path.
 - Legacy registry and per-user module metadata were removed from the active runtime surface.
 - Core docs and harness files now point to repo-true frontend guidance paths under `frontend/docs/`.

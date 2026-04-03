@@ -19,6 +19,7 @@
 | `backend/scripts/migrate.js` | Executable migration runner | Creates `schema_migrations` and applies ordered SQL files |
 | `backend/scripts/initDb.js` | Bootstrap alias | Delegates to the migration runner |
 | `backend/scripts/seedLocal.js` | Idempotent local demo seed | Inserts roles, users, settings, notifications, devices, and sessions |
+| `backend/scripts/seedBootstrapAdmin.js` | Idempotent remote bootstrap admin seed | Upserts one admin user from environment variables |
 | `backend/scripts/seedDemo.js` | Guarded staging demo seed | Seeds demo users only when `DEMO_SEED_ALLOWED=true` |
 
 ## Tables after current migrations
@@ -74,7 +75,7 @@
 |---|---|---|
 | The repo has one migration-backed schema path for scaffold and delivery tables | Later delivery schema slices such as tracking and incidents are still not implemented | Keep using additive migrations as later delivery slices land |
 | Historical SQL still shows older fields before later removals | Future delivery work could be tempted to rewrite baseline files | Preserve `0001` to `0003` as history and add new files after them |
-| Seed scripts populate scaffold entities only | Later prompts could overstate delivery bootstrap readiness | Keep delivery seed work deferred until delivery tables actually exist |
+| Seed scripts currently cover scaffold identities only | Later prompts could overstate delivery bootstrap readiness or confuse demo users with production access | Keep delivery seeds deferred, but use the dedicated bootstrap-admin path for the first real remote admin account |
 | The parent-child split between `events` and `delivery_events` is now the event baseline, and core delivery tables now exist in schema | No delivery runtime modules or handlers exist yet for the new tables | Use the new schema as the base for orders, drivers, deliveries, and assignments runtime slices before adding tracking and incidents |
 
 ## Recommended first delivery schema set

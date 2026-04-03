@@ -11,6 +11,7 @@
 | Primary schema command | `npm run db:migrate` |
 | Bootstrap alias | `npm run db:init` |
 | Local seed command | `npm run db:seed` |
+| Bootstrap admin seed command | `npm run db:seed:bootstrap-admin` |
 | Demo seed command | `npm run db:seed:demo` |
 | Preserved SQL files | `backend/migrations/0001_baseline.sql`, `0002_phase1_contracts.sql`, `0003_remove_app_registry_and_installed_apps.sql`, `0004_rename_events_to_delivery_events.sql`, `0005_restore_events_parent_and_split_delivery_events.sql`, `0006_prune_non_delivery_child_events.sql`, `0007_create_orders_and_drivers.sql`, `0008_create_deliveries_and_assignments.sql` |
 | Migration runner script | `backend/scripts/migrate.js` |
@@ -23,7 +24,7 @@
 |---|---|---|
 | `db:migrate` is the real schema path and `db:init` delegates to it | No documented delivery migration sequence exists after `0003_*` | Stage future delivery work as new forward-only SQL files after the current scaffold chain |
 | The runner already records ordered applied versions | There is no delivery rollout guidance for splitting foundational, async-platform, tracking, and incident slices | Document a staged rollout before adding any delivery SQL |
-| Seed commands populate scaffold data only | Later prompts could imply delivery bootstrap support that does not exist | Keep delivery seed work deferred until delivery tables and flows are real |
+| Seed commands now split between local demo data, remote bootstrap admin access, and deferred delivery data | Production access could be misread as coming from demo users | Keep the bootstrap-admin contract explicit, keep demo users out of production assumptions, and defer delivery seeds until delivery tables and flows are real |
 | The event split and foundational delivery schema are implemented through `0004_*` to `0008_*` | No delivery runtime modules exist yet for the new tables | Add orders, drivers, deliveries, and assignments runtime modules next, then tracking and incidents |
 
 ## Decision rule for Phase 0 work
@@ -51,12 +52,13 @@
 - Do not rewrite `0001_baseline.sql` or `0002_phase1_contracts.sql`.
 - Do not rewrite `0003_remove_app_registry_and_installed_apps.sql`.
 - Prefer additive migrations over historical edits.
-- Do not claim `db:migrate` or `db:seed:demo` were run unless they were actually executed.
+- Do not claim `db:migrate`, `db:seed:bootstrap-admin`, or `db:seed:demo` were run unless they were actually executed.
 - Keep schema docs aligned with the post-migration runtime state.
 - If a delivery rollout is partial, document the deferral rather than flattening it into one speculative migration.
 - Keep later delivery slices on the `events` parent plus `delivery_events` child baseline; do not collapse generic and delivery-specific events back into one table.
 
 ## Validation notes
 - If schema-affecting work lands, record whether `npm run db:migrate` was run.
+- If bootstrap-admin behavior changes, note whether `db:seed:bootstrap-admin` was exercised or deferred.
 - If demo-seed behavior changes, note whether `db:seed:demo` was exercised or deferred.
 - Report unavailable commands as unavailable, not passed.

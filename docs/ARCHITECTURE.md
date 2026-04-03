@@ -77,6 +77,7 @@ This section is a recommended target, not current runtime truth.
 - `npm run db:migrate` applies SQL migrations and records versions in `schema_migrations`.
 - `npm run db:init` delegates to the migration runner.
 - `npm run db:seed` runs the local seed.
+- `npm run db:seed:bootstrap-admin` upserts one environment-driven scaffold admin.
 - `npm run db:seed:demo` exists for guarded staging demo seeding.
 - Preserved SQL artifacts:
   - `backend/migrations/0001_baseline.sql`
@@ -105,7 +106,7 @@ This section is a recommended target, not current runtime truth.
 | Current state | Gap | Recommended target |
 |---|---|---|
 | Generic workspace runtime is implemented | Older docs described broader or different surfaces | Keep architecture docs centered on auth, dashboards, notifications, settings, and admin operations |
-| The migration runner is present and `db:init` delegates to it | The async deploy contract is now live, but the worker still boots without real processors or queue traffic | Keep architecture docs anchored to `.scaffold/project.json`, the current Railway workflow, and the service-name-based backend Docker startup |
+| The migration runner is present and `db:init` delegates to it | Production bootstrap can otherwise be mistaken for demo seeding | Keep architecture docs anchored to the migration runner, the bootstrap-admin seed contract, and the current Railway workflow |
 | Route handlers still return mostly raw JSON payloads | The API is not yet uniformly shaped | Harden deliberately instead of documenting an idealized contract |
 | `POST /api/events` and `POST /api/delivery-events` are narrowed to admin access | Signed or internal-only ingestion is still undefined, and lifecycle-owned producers do not exist yet | Keep both write surfaces narrow until a clearer producer model exists |
 | The live backend has only unversioned scaffold routes today | The first delivery route boundary and actor matrix would otherwise be inferred ad hoc during implementation | Start delivery routes under `/api/v1` and keep the milestone-1 actor model explicit in docs before runtime modules land |
