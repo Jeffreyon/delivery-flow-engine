@@ -15,7 +15,7 @@
 | Current state | Gap | Recommended target |
 |---|---|---|
 | `backend/package.json` now includes `bullmq` and `ioredis`, and shared queue config lives under `backend/src/core/queue` | No named queues or processors exist yet | Reuse the shared queue runtime in later job slices instead of inventing another bootstrap layer |
-| `.scaffold/project.json` now declares `Redis` and `worker`, and the Railway workflow deploys the `worker` service from `backend` | No deploy evidence confirms the live Railway project has been updated yet | Verify the live project on the first async deployment instead of changing the repo contract again |
+| `.scaffold/project.json` declares `Redis` and `worker`, the Railway workflow deploys `worker` from `backend`, and the live Railway project now has that worker topology in both deploy environments | No real queue processors or workload exist yet, and production currently uses a separate `Redis-nFa9` service while staging uses `Redis` | Build later queue-job slices on top of the live service topology, then reconcile the Redis service-name drift instead of changing the repo contract again |
 | `backend/worker.js` now boots the async runtime through `npm run worker` with `REDIS_URL`, `BULLMQ_PREFIX`, and `WORKER_CONCURRENCY` | The worker is idle because no processors are registered yet | Keep the worker monolithic until real BullMQ job slices land |
 
 ## Delivered baseline
@@ -23,6 +23,7 @@
 - Added shared queue runtime helpers under `backend/src/core/queue`.
 - Added `backend/worker.js` plus backend scripts to boot the worker separately.
 - Extended `.scaffold/project.json` and `.github/workflows/railway-deploy.yml` with `Redis` and `worker`.
+- Provisioned live Railway `worker` services in both environments and aligned the worker env contract against staging `Redis` and production `Redis-nFa9`.
 - Updated current-reality docs and harness notes to match the async bootstrap.
 
 ## Out of scope
@@ -60,7 +61,7 @@
 - Include worker boot evidence, deploy metadata changes, validation evidence, and any missing live Railway proof.
 
 ## Exit criteria
-- Worker and Redis services exist in project and deploy metadata.
+- Worker and Redis services exist in project metadata and in the live Railway project.
 - A worker process can boot with the documented env contract.
 - Runtime and deploy docs match the implemented service topology.
 

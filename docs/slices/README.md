@@ -7,7 +7,7 @@
 ## Current readiness
 - The repo still ships the Phase 0 auth, dashboard, and admin scaffold.
 - The repo now keeps generic `events` plus child `delivery_events` as separate runtime surfaces.
-- The async platform bootstrap now exists: BullMQ and `ioredis` are installed, shared queue config exists, and `backend/worker.js` is wired for a separate worker service.
+- The async platform bootstrap now exists: BullMQ and `ioredis` are installed, shared queue config exists, `backend/worker.js` is wired for a separate worker service, and the live Railway project now includes `Redis` plus `worker`.
 - The foundational delivery schema and `/api/v1` contract baseline now exist in docs and migrations.
 - No delivery runtime modules or real BullMQ job processors exist yet.
 

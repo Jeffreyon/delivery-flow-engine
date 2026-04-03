@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 8080
 
-CMD ["npm", "start"]
+CMD ["sh", "-lc", "if [ \"$RAILWAY_SERVICE_NAME\" = \"worker\" ]; then npm run worker; else npm start; fi"]

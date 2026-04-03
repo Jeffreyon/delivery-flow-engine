@@ -91,8 +91,8 @@ This section is a recommended target, not current runtime truth.
 | Area | Current state | Gap | Recommended target |
 |---|---|---|---|
 | Queue runtime | `backend/package.json` now includes `bullmq` and `ioredis`, and shared queue config lives under `backend/src/core/queue` | No named queues or processors exist yet | Build later job slices on top of the shared queue runtime |
-| Worker process | `backend/worker.js` can boot the queue runtime through `npm run worker` | No processors are registered yet | Keep one worker service until real job load proves a split is needed |
-| Deploy topology | `.scaffold/project.json` now declares `Redis`, `backend`, `worker`, and `frontend`; the Railway workflow deploys `worker` from the `backend` path | No deploy evidence confirms the live Railway project has been updated yet | Treat the repo metadata as the deploy contract and verify the live project on the first async deploy |
+| Worker process | `backend/worker.js` can boot the queue runtime through `npm run worker`, and the shared backend Dockerfile now switches between `npm start` and `npm run worker` by `RAILWAY_SERVICE_NAME` | No processors are registered yet | Keep one worker service until real job load proves a split is needed |
+| Deploy topology | The live Railway project now includes `Postgres`, `backend`, `worker`, `frontend`, and Redis services in both deploy environments, but production currently uses an extra `Redis-nFa9` service while staging uses `Redis` | The live project does not fully match the single-`Redis` contract in `.scaffold/project.json`, and no queue workload or worker-specific health evidence exists yet | Use the live topology as the async base for now, then reconcile the Redis service-name drift later without changing the worker env contract |
 | Queue env contract | `REDIS_URL`, `BULLMQ_PREFIX`, and `WORKER_CONCURRENCY` are now the documented worker env contract | Queue names and job-specific retry policy are still undefined | Reuse the same env names for all later BullMQ slices |
 
 ## Transaction reality
@@ -104,7 +104,7 @@ This section is a recommended target, not current runtime truth.
 | Current state | Gap | Recommended target |
 |---|---|---|
 | Generic workspace runtime is implemented | Older docs described broader or different surfaces | Keep architecture docs centered on auth, dashboards, notifications, settings, and admin operations |
-| The migration runner is present and `db:init` delegates to it | The async deploy contract is now declared in repo metadata but not yet proven by a live Railway rollout | Keep architecture docs anchored to `.scaffold/project.json` and the current Railway workflow until deploy evidence exists |
+| The migration runner is present and `db:init` delegates to it | The async deploy contract is now live, but the worker still boots without real processors or queue traffic and the live Railway Redis naming drifts from repo metadata | Keep architecture docs anchored to `.scaffold/project.json`, the current Railway workflow, the service-name-based backend Docker startup, and the explicit Redis drift note until the live project is reconciled |
 | Route handlers still return mostly raw JSON payloads | The API is not yet uniformly shaped | Harden deliberately instead of documenting an idealized contract |
 | `POST /api/events` and `POST /api/delivery-events` are narrowed to admin access | Signed or internal-only ingestion is still undefined, and lifecycle-owned producers do not exist yet | Keep both write surfaces narrow until a clearer producer model exists |
 | The live backend has only unversioned scaffold routes today | The first delivery route boundary and actor matrix would otherwise be inferred ad hoc during implementation | Start delivery routes under `/api/v1` and keep the milestone-1 actor model explicit in docs before runtime modules land |
