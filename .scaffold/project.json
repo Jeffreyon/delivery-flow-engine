@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 2,
+  "createdAt": "2026-04-02T09:11:23.514Z",
+  "updatedAt": "2026-04-03T07:20:26.021Z",
+  "completedAt": null,
+  "status": "in_progress",
+  "template": "web_app",
+  "projectName": "delivery flow engine",
+  "projectSlug": "delivery-flow-engine",
+  "outputDir": "C:\\Users\\ELITEBOOK\\Desktop\\projects\\scaffolds\\shared_layer\\apps\\delivery-flow-engine",
+  "options": {
+    "githubOwner": null,
+    "githubRepo": "delivery-flow-engine",
+    "githubVisibility": "private",
+    "railwayWorkspace": "Jeffrey Onuigbo's Projects",
+    "skipGit": false,
+    "skipGithub": false,
+    "skipRailway": false
+  },
+  "context": {
+    "projectName": "delivery flow engine",
+    "projectSlug": "delivery-flow-engine",
+    "packageNames": {
+      "root": "delivery-flow-engine",
+      "backend": "delivery-flow-engine-backend",
+      "frontend": "delivery-flow-engine-frontend"
+    },
+    "localDev": {
+      "runtimeDir": ".scaffold/runtime",
+      "backendPort": 5000,
+      "frontendPort": 3000,
+      "postgresDatabase": "delivery_flow_engine",
+      "postgresHost": "127.0.0.1",
+      "postgresPort": 6446,
+      "postgresUser": "postgres",
+      "mysqlDatabase": "backyard_delivery_flow_engine",
+      "mysqlHost": "127.0.0.1",
+      "mysqlPort": 3306,
+      "mysqlUser": "bc_delivery_flow_engine",
+      "backendUrl": "http://127.0.0.1:5000",
+      "frontendUrl": "http://127.0.0.1:3000",
+      "storageUrlPrefix": "http://127.0.0.1:5000/storage",
+      "frontendApiUrl": "http://127.0.0.1:4446"
+    },
+    "githubOwner": null,
+    "githubRepo": "delivery-flow-engine",
+    "githubRepoFullName": "delivery-flow-engine",
+    "railwayProjectName": "delivery flow engine"
+  },
+  "steps": {
+    "copyTemplate": {
+      "status": "completed",
+      "attempts": 1,
+      "startedAt": "2026-04-02T09:11:23.534Z",
+      "completedAt": "2026-04-02T09:11:46.826Z",
+      "lastError": null
+    },
+    "installDependencies": {
+      "status": "completed",
+      "attempts": 3,
+      "startedAt": "2026-04-02T09:21:54.989Z",
+      "completedAt": "2026-04-02T09:27:07.176Z",
+      "lastError": null
+    },
+    "setupLocalDatabase": {
+      "status": "completed",
+      "attempts": 9,
+      "startedAt": "2026-04-03T07:20:13.842Z",
+      "completedAt": "2026-04-03T07:20:17.230Z",
+      "lastError": null
+    },
+    "runMigrationsAndSeed": {
+      "status": "completed",
+      "attempts": 6,
+      "startedAt": "2026-04-03T07:20:17.235Z",
+      "completedAt": "2026-04-03T07:20:19.744Z",
+      "lastError": null
+    },
+    "verifyLocalDevelopment": {
+      "status": "completed",
+      "attempts": 6,
+      "startedAt": "2026-04-03T07:20:19.753Z",
+      "completedAt": "2026-04-03T07:20:25.989Z",
+      "lastError": null
+    },
+    "provisionRailway": {
+      "status": "completed",
+      "attempts": 1,
+      "startedAt": "2026-04-03T06:23:01.500Z",
+      "completedAt": "2026-04-03T06:24:28.046Z",
+      "lastError": null
+    },
+    "initializeGitRepo": {
+      "status": "in_progress",
+      "attempts": 2,
+      "startedAt": "2026-04-03T07:20:26.019Z",
+      "completedAt": null,
+      "lastError": null
+    },
+    "createGithubRepo": {
+      "status": "pending",
+      "attempts": 1,
+      "startedAt": "2026-04-03T06:24:28.124Z",
+      "completedAt": null,
+      "lastError": null
+    }
+  },
+  "git": {
+    "defaultBranch": "main",
+    "branches": [
+      "main",
+      "staging"
+    ]
+  },
+  "github": {
+    "owner": null,
+    "repo": "delivery-flow-engine",
+    "fullName": null,
+    "visibility": "private",
+    "remoteUrl": null,
+    "syncedSecrets": [],
+    "syncedVariables": []
+  },
+  "railway": {
+    "projectId": "b548f718-4244-4afd-ac55-e83b60ba7fd1",
+    "projectName": "delivery flow engine",
+    "workspace": "Jeffrey Onuigbo's Projects",
+    "environments": [
+      {
+        "name": "production",
+        "branch": "main"
+      },
+      {
+        "name": "staging",
+        "branch": "staging"
+      }
+    ],
+    "services": [
+      {
+        "name": "Postgres",
+        "kind": "database",
+        "path": null,
+        "publicDomain": false
+      },
+      {
+        "name": "backend",
+        "kind": "empty",
+        "path": "backend",
+        "publicDomain": true
+      },
+      {
+        "name": "frontend",
+        "kind": "empty",
+        "path": "frontend",
+        "publicDomain": true
+      }
+    ]
+  },
+  "ci": {
+    "provider": "github-actions",
+    "workflowFile": ".github/workflows/railway-deploy.yml",
+    "secrets": [
+      "RAILWAY_API_TOKEN"
+    ],
+    "variables": [
+      {
+        "name": "RAILWAY_PROJECT_ID",
+        "valueFrom": "railway.projectId"
+      }
+    ],
+    "branchDeployments": [
+      {
+        "branch": "main",
+        "environment": "production"
+      },
+      {
+        "branch": "staging",
+        "environment": "staging"
+      }
+    ]
+  },
+  "lastError": null
+}
