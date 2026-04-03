@@ -73,7 +73,9 @@ jobs:
         working-directory: backend
 
   bootstrap-admin:
-    needs: migrate
+    needs:
+      - migrate
+      - seed-demo
     runs-on: ubuntu-latest
     env:
       RAILWAY_ENVIRONMENT: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
