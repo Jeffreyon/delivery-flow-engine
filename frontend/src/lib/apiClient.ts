@@ -2,17 +2,14 @@ import axios from "axios";
 import { clearAuthToken, getAuthToken } from "@/lib/authToken";
 import { assertApiBaseUrl, getApiBaseUrl } from "@/lib/runtimeConfig";
 
-const API_BASE_URL = getApiBaseUrl();
-
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
   // Allow cookies (for Firebase session cookie set by backend)
   withCredentials: true,
 });
 
 apiClient.interceptors.request.use((config) => {
-  config.baseURL = config.baseURL ?? API_BASE_URL;
-  assertApiBaseUrl(config.baseURL);
+  const apiBaseUrl = config.baseURL ?? getApiBaseUrl();
+  config.baseURL = assertApiBaseUrl(apiBaseUrl);
 
   const token = getAuthToken();
 
