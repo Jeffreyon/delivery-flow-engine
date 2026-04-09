@@ -44,7 +44,8 @@ The seed is idempotent, so rerunning `npm run db:seed` updates those records ins
 
 - `backend/.env.example` now includes the first sibling BLN client contract.
 - Set `LOGISTICS_API_URL` to the sibling `logistics-api` backend base URL.
-- Set `LOGISTICS_API_SERVICE_SECRET` to the `logistics-api` delivery-backend service secret used for tenant bootstrap and token exchange.
+- Set `LOGISTICS_API_SERVICE_SECRET` to the same value as the sibling `logistics-api` `DELIVERY_BACKEND_SERVICE_SECRET`.
+- That shared secret is trusted backend-to-backend auth for tenant bootstrap and support flows only. Tenants still authenticate with tenant API keys and node-bound runtime tokens in `logistics-api`.
 - `LOGISTICS_API_TIMEOUT_MS` is optional and defaults to `10000`.
 
 ## Current known Phase 0 gaps

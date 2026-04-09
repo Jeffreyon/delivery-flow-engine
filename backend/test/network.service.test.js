@@ -208,6 +208,164 @@ describe("network service bridge", () => {
     });
   });
 
+  test("provisionSelfNetwork bootstraps the current user into a new tenant and default node", async () => {
+    usersRepository.getById.mockResolvedValue(baseUser);
+    usersRepository.upsert.mockImplementation(async (id, payload) => ({
+      ...baseUser,
+      ...payload,
+      id,
+    }));
+    tenantIntegrationsRepository.upsert.mockResolvedValue({
+      tenantId: "tenant-signup-1",
+      apiKeyEncrypted: "enc-key",
+      apiKeyLast4: "9999",
+      status: "ACTIVE",
+      createdAt: 456,
+      updatedAt: 456,
+    });
+    tenantMembershipsRepository.listByUserId.mockResolvedValue([]);
+    tenantMembershipsRepository.upsert.mockResolvedValue({
+      userId: "user-1",
+      tenantId: "tenant-signup-1",
+      role: "OWNER",
+      status: "ACTIVE",
+      createdAt: 456,
+      updatedAt: 456,
+    });
+    nodeAssignmentsRepository.upsert.mockResolvedValue({
+      userId: "user-1",
+      tenantId: "tenant-signup-1",
+      nodeId: "node-signup-1",
+      isDefault: true,
+      status: "ACTIVE",
+      createdAt: 456,
+      updatedAt: 456,
+    });
+    tenantApiKeyCipher.encryptTenantApiKey.mockReturnValue("enc-key");
+    logisticsClient.bootstrapTenant.mockResolvedValue({
+      tenant: {
+        id: "tenant-signup-1",
+        name: "Workspace One",
+        createdAt: 456,
+      },
+      node: {
+        id: "node-signup-1",
+        tenantId: "tenant-signup-1",
+        phoneNumber: "+2348000000011",
+        trustScore: 0,
+        createdAt: 456,
+      },
+      apiKey: {
+        value: "bln_signup_key",
+        last4: "9999",
+        createdAt: 456,
+      },
+    });
+
+    const result = await NetworkService.provisionSelfNetwork(
+      {
+        uid: "user-1",
+        email: "user@example.com",
+        isAdmin: false,
+      },
+      {
+        tenantName: "Workspace One",
+        phoneNumber: "+2348000000011",
+      }
+    );
+
+    expect(logisticsClient.bootstrapTenant).toHaveBeenCalledWith({
+      name: "Workspace One",
+      firstNode: {
+        phoneNumber: "+2348000000011",
+        trustScore: 0,
+      },
+    });
+    expect(tenantMembershipsRepository.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        tenantId: "tenant-signup-1",
+        role: "OWNER",
+      })
+    );
+    expect(nodeAssignmentsRepository.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        tenantId: "tenant-signup-1",
+        nodeId: "node-signup-1",
+        isDefault: true,
+      })
+    );
+    expect(result).toEqual({
+      tenant: {
+        id: "tenant-signup-1",
+        name: "Workspace One",
+        createdAt: 456,
+      },
+      node: {
+        id: "node-signup-1",
+        tenantId: "tenant-signup-1",
+        phoneNumber: "+2348000000011",
+        trustScore: 0,
+        createdAt: 456,
+      },
+      binding: {
+        userId: "user-1",
+        tenantId: "tenant-signup-1",
+        nodeId: "node-signup-1",
+        role: "OWNER",
+      },
+      membership: {
+        userId: "user-1",
+        tenantId: "tenant-signup-1",
+        role: "OWNER",
+        status: "ACTIVE",
+      },
+      assignment: {
+        userId: "user-1",
+        tenantId: "tenant-signup-1",
+        nodeId: "node-signup-1",
+        isDefault: true,
+        status: "ACTIVE",
+      },
+      apiKey: {
+        last4: "9999",
+        createdAt: 456,
+      },
+    });
+  });
+
+  test("provisionSelfNetwork rejects users who already have an active BLN membership", async () => {
+    usersRepository.getById.mockResolvedValue(baseUser);
+    tenantMembershipsRepository.listByUserId.mockResolvedValue([
+      {
+        userId: "user-1",
+        tenantId: "tenant-1",
+        role: "OWNER",
+        status: "ACTIVE",
+      },
+    ]);
+
+    await expect(
+      NetworkService.provisionSelfNetwork(
+        {
+          uid: "user-1",
+          email: "user@example.com",
+          isAdmin: false,
+        },
+        {
+          tenantName: "Workspace One",
+          phoneNumber: "+2348000000011",
+        }
+      )
+    ).rejects.toMatchObject({
+      status: 409,
+      message: "A BLN tenant membership already exists for the current user",
+    });
+
+    expect(logisticsClient.bootstrapTenant).not.toHaveBeenCalled();
+  });
+
   test("getNetworkContext returns an unbound issue when the current user has no active membership", async () => {
     usersRepository.getById.mockResolvedValue(baseUser);
     tenantMembershipsRepository.listByUserId.mockResolvedValue([]);

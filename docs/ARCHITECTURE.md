@@ -23,7 +23,7 @@ Current note:
 | Planned module | Local route prefix | External dependency | Notes |
 |---|---|---|---|
 | logistics client | backend-only | sibling `logistics-api` | Implemented foundation; wraps tenant bootstrap, support-only tenant exchange, node-session exchange, nodes, deliveries, events, and handoffs |
-| network context | `/api/v1/network` | `logistics-api` tenant bootstrap, node-session exchange, and nodes | Resolves the local user or admin session into a membership-scoped BLN tenant and node context, and now exposes admin-side tenant-member and node-assignment management |
+| network context | `/api/v1/network` | `logistics-api` tenant bootstrap, node-session exchange, and nodes | Resolves the local user or admin session into a membership-scoped BLN tenant and node context, exposes admin-side tenant-member and node-assignment management, and now includes self-service post-signup tenant provisioning |
 | deliveries facade | `/api/v1/deliveries` | `logistics-api` deliveries and events | Local backend composes remote delivery state for the frontend |
 | handoffs facade | `/api/v1/handoffs` and `/api/v1/deliveries/:id/handoff-status` | `logistics-api` handoffs | Implemented; exposes custody-transfer workflows without leaking BLN secrets to the frontend |
 | projections and jobs | local queue plus optional local DB | `logistics-api` reads, events, and health checks | Deferred until the remote facade exists and the app needs cached summaries or alerts |
@@ -85,6 +85,11 @@ Current note:
 - The backend stores the tenant API key only in encrypted backend storage and never returns it to the browser.
 - Owner-scoped delivery and handoff routes mint a short-lived node session token on demand through the sibling `logistics-api` and do not persist that token locally.
 - Local admin support keeps one exception: handoff resolution still uses service-backed tenant exchange because the sibling handoff resolve route is tenant-readable but not service-readable.
+- `LOGISTICS_API_SERVICE_SECRET` is the delivery app's copy of the sibling `logistics-api` `DELIVERY_BACKEND_SERVICE_SECRET`; it is trusted backend-to-backend auth only and does not replace tenant API keys or node-bound runtime auth.
+- The signup flow is now explicit:
+  - `POST /api/auth/signup` creates the local user
+  - the frontend immediately follows with `POST /api/v1/network/provision-self`
+  - that second step bootstraps the first BLN tenant and node and writes the local tenant integration, membership, and default node assignment
 
 ## Frontend composition model
 - `main.tsx` wraps the app with:

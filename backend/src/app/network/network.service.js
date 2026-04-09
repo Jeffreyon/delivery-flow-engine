@@ -56,6 +56,14 @@ const createNodePayloadSchema = z
   })
   .strict();
 
+const provisionSelfPayloadSchema = z
+  .object({
+    tenantName: z.string().trim().min(1).max(120),
+    phoneNumber: z.string().trim().min(1),
+    trustScore: z.coerce.number().min(0).default(0),
+  })
+  .strict();
+
 const listTenantUsersQuerySchema = z
   .object({
     tenantId: z.string().trim().min(1),
@@ -663,67 +671,146 @@ function createNetworkService(dependencies = {}) {
       );
     }
 
-    const localResult = await withTransaction(async (client) => {
-      await requireExistingUser(targetUserId, client);
-
-      const tenantAccount = await persistTenantIntegration(
+    const localResult = await withTransaction(async (client) =>
+      persistProvisionedNetworkContext(
         {
+          userId: targetUserId,
           tenantId,
-          apiKeyEncrypted: getCipher().encryptTenantApiKey(apiKeyValue),
+          nodeId,
+          apiKeyValue,
           apiKeyLast4: bootstrapResult?.apiKey?.last4 || null,
-          status: TENANT_ACCOUNT_ACTIVE_STATUS,
-          createdAt: now,
-          updatedAt: now,
-        },
-        client
-      );
-
-      const membership = await persistMembership(
-        {
-          userId: targetUserId,
-          tenantId,
           role: DEFAULT_MEMBERSHIP_ROLE,
-          status: MEMBERSHIP_ACTIVE_STATUS,
           createdAt: now,
           updatedAt: now,
         },
         client
-      );
-
-      const assignment = await persistNodeAssignment(
-        {
-          userId: targetUserId,
-          tenantId,
-          nodeId,
-          isDefault: true,
-          status: NODE_ASSIGNMENT_ACTIVE_STATUS,
-          createdAt: now,
-          updatedAt: now,
-        },
-        client
-      );
-
-      await persistBindingForUser(
-        targetUserId,
-        {
-          tenantId,
-          nodeId,
-        },
-        client
-      );
-
-      return {
-        tenantAccount,
-        membership,
-        assignment,
-      };
-    });
+      )
+    );
 
     return {
       tenant: bootstrapResult.tenant || null,
       node: bootstrapResult.node || null,
       binding: {
         userId: targetUserId,
+        tenantId,
+        nodeId,
+        role: localResult.membership.role,
+      },
+      membership: toMembershipDTO(localResult.membership),
+      assignment: toAssignmentDTO(localResult.assignment),
+      apiKey: toSafeApiKeyDTO(bootstrapResult.apiKey),
+    };
+  }
+
+  async function persistProvisionedNetworkContext(payload, client) {
+    await requireExistingUser(payload.userId, client);
+
+    const tenantAccount = await persistTenantIntegration(
+      {
+        tenantId: payload.tenantId,
+        apiKeyEncrypted: getCipher().encryptTenantApiKey(payload.apiKeyValue),
+        apiKeyLast4: payload.apiKeyLast4 || null,
+        status: TENANT_ACCOUNT_ACTIVE_STATUS,
+        createdAt: payload.createdAt,
+        updatedAt: payload.updatedAt,
+      },
+      client
+    );
+
+    const membership = await persistMembership(
+      {
+        userId: payload.userId,
+        tenantId: payload.tenantId,
+        role: payload.role || DEFAULT_MEMBERSHIP_ROLE,
+        status: MEMBERSHIP_ACTIVE_STATUS,
+        createdAt: payload.createdAt,
+        updatedAt: payload.updatedAt,
+      },
+      client
+    );
+
+    const assignment = await persistNodeAssignment(
+      {
+        userId: payload.userId,
+        tenantId: payload.tenantId,
+        nodeId: payload.nodeId,
+        isDefault: true,
+        status: NODE_ASSIGNMENT_ACTIVE_STATUS,
+        createdAt: payload.createdAt,
+        updatedAt: payload.updatedAt,
+      },
+      client
+    );
+
+    await persistBindingForUser(
+      payload.userId,
+      {
+        tenantId: payload.tenantId,
+        nodeId: payload.nodeId,
+      },
+      client
+    );
+
+    return {
+      tenantAccount,
+      membership,
+      assignment,
+    };
+  }
+
+  async function provisionSelfNetwork(authContext, rawPayload) {
+    const actor = requireActor(authContext);
+    const parsed = provisionSelfPayloadSchema.parse(rawPayload || {});
+    const currentUser = await requireExistingUser(actor.uid);
+    const memberships = await listMembershipsByUserId(actor.uid);
+    const activeMemberships = filterActiveMemberships(memberships);
+
+    if (activeMemberships.length) {
+      throw createConflictError(
+        "A BLN tenant membership already exists for the current user"
+      );
+    }
+
+    const now = Date.now();
+    const bootstrapResult = await getClient().bootstrapTenant({
+      name: parsed.tenantName,
+      firstNode: {
+        phoneNumber: parsed.phoneNumber,
+        trustScore: parsed.trustScore,
+      },
+    });
+
+    const tenantId = String(bootstrapResult?.tenant?.id || "").trim();
+    const nodeId = String(bootstrapResult?.node?.id || "").trim();
+    const apiKeyValue = String(bootstrapResult?.apiKey?.value || "").trim();
+
+    if (!tenantId || !nodeId || !apiKeyValue) {
+      throw createUpstreamContractError(
+        "logistics-api bootstrap response did not include tenant, node, and API key values"
+      );
+    }
+
+    const localResult = await withTransaction(async (client) =>
+      persistProvisionedNetworkContext(
+        {
+          userId: currentUser.id,
+          tenantId,
+          nodeId,
+          apiKeyValue,
+          apiKeyLast4: bootstrapResult?.apiKey?.last4 || null,
+          role: DEFAULT_MEMBERSHIP_ROLE,
+          createdAt: now,
+          updatedAt: now,
+        },
+        client
+      )
+    );
+
+    return {
+      tenant: bootstrapResult.tenant || null,
+      node: bootstrapResult.node || null,
+      binding: {
+        userId: currentUser.id,
         tenantId,
         nodeId,
         role: localResult.membership.role,
@@ -1100,6 +1187,7 @@ function createNetworkService(dependencies = {}) {
 
   return {
     bootstrapNetwork,
+    provisionSelfNetwork,
     getNetworkContext,
     resolveTenantAccess,
     resolveAdminTenantAccess,

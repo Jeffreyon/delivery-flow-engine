@@ -31,6 +31,17 @@ router.post(
   })
 );
 
+router.post(
+  "/provision-self",
+  asyncHandler(async (req, res) => {
+    const result = await NetworkService.provisionSelfNetwork(
+      buildActor(req),
+      req.body || {}
+    );
+    res.status(201).json(result);
+  })
+);
+
 router.get(
   "/context",
   asyncHandler(async (req, res) => {

@@ -49,6 +49,7 @@
 | 15 | `docs/slices/15-handoffs-and-custody-workspace.md` | backend or full-stack | 15 | No | Implemented | 12, 13, 14 |
 | 16 | `docs/slices/16-projections-jobs-and-ops-surface.md` | full-stack | 16 | Maybe | Planned | 01, 14, 15 |
 | 17 | `docs/slices/17-tenant-user-and-node-management.md` | backend | 17 | No | Implemented | 12, 13, 15 |
+| 18 | `docs/slices/18-signup-network-provisioning.md` | backend or full-stack | 18 | No | Implemented | 12, 13, 17 |
 
 ## Required pack fields
 - `Type`

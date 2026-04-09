@@ -45,6 +45,7 @@
 | Devices | POST | `/api/devices` | Authenticated | `DeviceItem` |
 | Sessions | GET | `/api/sessions` | Authenticated | `SessionItem[]` |
 | Network | POST | `/api/v1/network/bootstrap` | Admin | `{ tenant, node, binding, apiKey }` |
+| Network | POST | `/api/v1/network/provision-self` | Authenticated | `{ tenant, node, binding, membership, assignment, apiKey }` |
 | Network | GET | `/api/v1/network/context` | Authenticated | `{ actor, binding, memberships, assignments, effectiveContext, tenant, node, issues }` |
 | Network | GET | `/api/v1/network/nodes` | Authenticated | `{ tenantId, activeNodeId, items }` |
 | Network | POST | `/api/v1/network/nodes` | Admin | `{ node }` |
@@ -78,6 +79,8 @@
 - When `SESSION_COOKIE_SECURE=true`, auth cookies are issued with `SameSite=None` so the Railway frontend can use credentialed cross-origin requests; local insecure cookie flows stay `SameSite=Lax`.
 - `/api/v1/network/bootstrap` binds the bootstrapped tenant and first node to one local user immediately; `bindUserId` defaults to the current admin.
 - `/api/v1/network/bootstrap` stores the returned tenant API key only in encrypted backend storage and returns only safe metadata to the frontend.
+- `/api/auth/signup` is still local-user creation only; the app’s first BLN tenant and node are provisioned by the explicit follow-up route `POST /api/v1/network/provision-self`.
+- `/api/v1/network/provision-self` is the first-user onboarding route: it bootstraps a tenant and first node in the sibling `logistics-api`, stores the returned tenant API key only in encrypted backend storage, then writes the local tenant integration, membership, default node assignment, and compatibility binding mirror for the signed-in user.
 - `/api/v1/network/context` returns `200` with `issues` when the secured BLN membership, node assignment, or tenant integration is missing, stale, or holds an invalid API key, instead of converting that local state gap into a hard 4xx.
 - `/api/v1/network/nodes` never exposes BLN API keys, tenant tokens, or node session tokens to the frontend.
 - `/api/v1/network/nodes` returns the selected tenant's node list plus `activeNodeId` for non-admin callers; `POST /api/v1/network/nodes` is still admin-only support flow.
@@ -122,6 +125,10 @@ This section is implemented runtime truth, but it is not an HTTP route surface y
   - service auth uses `x-delivery-backend-secret`
   - tenant auth uses `Authorization: Bearer <tenant credential>`
   - node session exchange uses `Authorization: Bearer <tenant API key>`
+- Service secret note:
+  - `LOGISTICS_API_SERVICE_SECRET` is not tenant auth
+  - it must match `DELIVERY_BACKEND_SERVICE_SECRET` in the sibling `logistics-api`
+  - it exists only for trusted backend-to-backend calls such as tenant bootstrap and support flows
 - Upstream error normalization:
   - preserves upstream HTTP status for known BLN responses
   - maps transport failures to `502`
@@ -154,6 +161,19 @@ This section is implemented runtime truth, but it is not an HTTP route surface y
     - encrypts and stores the returned tenant API key in `bln_tenant_accounts`
     - returns only safe API key metadata: `last4` and `createdAt`
     - never returns the plaintext upstream API key to the frontend
+- `POST /api/v1/network/provision-self`
+  - request body:
+    - `tenantName`
+    - `phoneNumber`
+    - optional `trustScore`
+  - current behavior:
+    - requires an authenticated local user
+    - bootstraps one tenant and first node in the sibling `logistics-api`
+    - stores the returned tenant API key only in encrypted backend storage
+    - creates the local tenant membership as `OWNER`
+    - creates the local default node assignment for the current user
+    - returns only safe API key metadata: `last4` and `createdAt`
+    - rejects the request when the current user already has an active BLN tenant membership
 - `GET /api/v1/network/context`
   - current response shape:
     - `actor`

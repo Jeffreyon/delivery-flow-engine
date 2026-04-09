@@ -3,10 +3,14 @@ import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { setAuthToken } from "@/lib/authToken";
 import { signup } from "@/services/auth.api";
+import { provisionSelfNetwork } from "@/services/network.api";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { useToast } from "@/hooks/useToast";
 
 type SignupFormValues = {
+  displayName: string;
+  tenantName: string;
+  phoneNumber: string;
   email: string;
   password: string;
 };
@@ -22,22 +26,41 @@ export default function Signup() {
 
   async function onSubmit(values: SignupFormValues) {
     setLoading(true);
+    let accountCreated = false;
 
     try {
-      const res = await signup(values);
+      const res = await signup({
+        email: values.email,
+        password: values.password,
+        profile: {
+          displayName: values.displayName,
+        },
+      });
       if (res.idToken) {
         setAuthToken(res.idToken);
       }
+      accountCreated = true;
+      await provisionSelfNetwork({
+        tenantName: values.tenantName,
+        phoneNumber: values.phoneNumber,
+      });
       success(
-        "Your account has been created. You can now log in.",
+        "Your account and network workspace have been created.",
         "Account created"
       );
     } catch (err) {
       console.error(err);
-      showErrorToast(
-        "Sign up failed. Please try again.",
-        "Sign up failed"
-      );
+      if (accountCreated) {
+        showErrorToast(
+          "Your account was created, but network provisioning failed. Sign in and retry after support confirms the network bridge is healthy.",
+          "Provisioning failed"
+        );
+      } else {
+        showErrorToast(
+          "Sign up failed. Please try again.",
+          "Sign up failed"
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -62,6 +85,59 @@ export default function Signup() {
       }
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium" htmlFor="displayName">
+            Full name
+          </label>
+          <input
+            id="displayName"
+            type="text"
+            {...register("displayName", { required: "Full name is required" })}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          />
+          {errors.displayName && (
+            <p className="text-xs text-destructive" role="alert">
+              {errors.displayName.message}
+            </p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium" htmlFor="tenantName">
+            Workspace name
+          </label>
+          <input
+            id="tenantName"
+            type="text"
+            {...register("tenantName", {
+              required: "Workspace name is required",
+            })}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          />
+          {errors.tenantName && (
+            <p className="text-xs text-destructive" role="alert">
+              {errors.tenantName.message}
+            </p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium" htmlFor="phoneNumber">
+            Node phone number
+          </label>
+          <input
+            id="phoneNumber"
+            type="tel"
+            placeholder="+2348012345678"
+            {...register("phoneNumber", {
+              required: "Node phone number is required",
+            })}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          />
+          {errors.phoneNumber && (
+            <p className="text-xs text-destructive" role="alert">
+              {errors.phoneNumber.message}
+            </p>
+          )}
+        </div>
         <div className="space-y-2">
           <label className="block text-sm font-medium" htmlFor="email">
             Email

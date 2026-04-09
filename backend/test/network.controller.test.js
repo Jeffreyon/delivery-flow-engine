@@ -10,6 +10,7 @@ jest.mock("../src/core/middlewares/authz", () => ({
 }));
 jest.mock("../src/app/network/network.service", () => ({
   bootstrapNetwork: jest.fn(),
+  provisionSelfNetwork: jest.fn(),
   getNetworkContext: jest.fn(),
   listNetworkNodes: jest.fn(),
   createNetworkNode: jest.fn(),
@@ -34,6 +35,7 @@ describe("network controller bridge", () => {
     attachAuthz.mockReset();
     requireAdmin.mockReset();
     NetworkService.bootstrapNetwork.mockReset();
+    NetworkService.provisionSelfNetwork.mockReset();
     NetworkService.getNetworkContext.mockReset();
     NetworkService.listNetworkNodes.mockReset();
     NetworkService.createNetworkNode.mockReset();
@@ -112,6 +114,56 @@ describe("network controller bridge", () => {
     expect(response.status).toBe(403);
     expect(response.body).toEqual({ message: "Admin privileges required" });
     expect(NetworkService.bootstrapNetwork).not.toHaveBeenCalled();
+  });
+
+  test("POST /api/v1/network/provision-self forwards the current actor and returns 201", async () => {
+    NetworkService.provisionSelfNetwork.mockResolvedValue({
+      tenant: { id: "tenant-1" },
+      node: { id: "node-1" },
+      binding: {
+        userId: "user-1",
+        tenantId: "tenant-1",
+        nodeId: "node-1",
+        role: "OWNER",
+      },
+      membership: {
+        userId: "user-1",
+        tenantId: "tenant-1",
+        role: "OWNER",
+        status: "ACTIVE",
+      },
+      assignment: {
+        userId: "user-1",
+        tenantId: "tenant-1",
+        nodeId: "node-1",
+        isDefault: true,
+        status: "ACTIVE",
+      },
+      apiKey: {
+        last4: "1234",
+        createdAt: 123,
+      },
+    });
+
+    const response = await request(app)
+      .post("/api/v1/network/provision-self")
+      .send({
+        tenantName: "Tenant One",
+        phoneNumber: "+2348000000000",
+      });
+
+    expect(response.status).toBe(201);
+    expect(NetworkService.provisionSelfNetwork).toHaveBeenCalledWith(
+      {
+        uid: "user-1",
+        email: "user@example.com",
+        isAdmin: false,
+      },
+      {
+        tenantName: "Tenant One",
+        phoneNumber: "+2348000000000",
+      }
+    );
   });
 
   test("POST /api/v1/network/nodes forwards the actor context and returns 201", async () => {
