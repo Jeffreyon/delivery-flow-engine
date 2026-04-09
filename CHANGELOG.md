@@ -17,6 +17,7 @@ This file records material changes to how the template should be understood or u
 - Added explicit BLN-backed feature opportunities in the docs so later work can focus on onboarding, custody workflows, diagnostics, and notifications on top of the existing BLN API rather than duplicating core logistics storage first.
 - Marked `Navigatr` as a future map SDK candidate for later operator surfaces only, keeping it out of the current slice queue until the BLN facade and dashboard flows are real.
 - Updated migration and prompt-routing guidance so future agents do not add more local delivery schema or contract surface by reflex when the next active gap is still the external BLN integration layer.
+- Fixed the signup user insert path so staging and local user creation now write the correct `users` column count, and added a focused repository regression test to keep the insert placeholder count aligned.
 
 ## 2026-04-03
 
