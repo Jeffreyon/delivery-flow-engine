@@ -4,7 +4,9 @@
 - Run order: `5`
 - Depends on: Slices 03 and 04
 - Migration need: `No`
-- Status: `Planned`
+- Status: `Archived`
+
+> Archived note: this local-first runtime pack is no longer the active queue. Use the BLN integration track starting at Slice 11 unless the repo explicitly reopens a local augmentation path.
 
 ## PRD coverage
 - Deliveries module

@@ -1,6 +1,6 @@
 # Delivery Flow Engine Scaffold
 
-`delivery-flow-engine` currently ships a Phase 0 workspace/account/admin scaffold that serves as the starting point for Delivery Flow Engine planning.
+`delivery-flow-engine` currently ships a Phase 0 workspace/account/admin scaffold that serves as the starting point for Delivery Flow Engine planning and the future app shell that integrates with the sibling `logistics-api` BLN surface.
 
 Current runtime coverage:
 - auth
@@ -40,10 +40,20 @@ The seed is idempotent, so rerunning `npm run db:seed` updates those records ins
 - Railway frontend deploys now generate a runtime `runtime-config.js` file from the `frontend` service `VITE_API_URL` variable when the container boots.
 - Keep `VITE_API_URL` pointed at the matching backend public domain in both `staging` and `production`, or auth and other `/api/*` requests will fail closed instead of falling back to the frontend origin.
 
+## Backend BLN runtime config
+
+- `backend/.env.example` now includes the first sibling BLN client contract.
+- Set `LOGISTICS_API_URL` to the sibling `logistics-api` backend base URL.
+- Set `LOGISTICS_API_SERVICE_SECRET` to the `logistics-api` delivery-backend service secret used for tenant bootstrap and token exchange.
+- `LOGISTICS_API_TIMEOUT_MS` is optional and defaults to `10000`.
+
 ## Current known Phase 0 gaps
 
 - API and auth contracts are only partially hardened; see `docs/GAP_ANALYSIS.md` before widening runtime behavior.
-- delivery-domain runtime modules, tracking and incident schema, and actual queue-backed jobs still need to be implemented on top of the scaffold, locked `/api/v1` contract, and foundational delivery schema.
+- the backend-only logistics client foundation now exists, but no local BLN context bridge or `/api/v1` facade routes consume it yet.
+- no local bridge exists yet between authenticated app users and BLN tenant or node context.
+- no BLN-backed delivery, event, handoff, or custody UI exists yet on top of the scaffold.
+- local `orders`, `drivers`, `deliveries`, and `assignments` tables exist in schema, but they are not the active execution path and should be treated as future augmentation or caching candidates until a deliberate decision reactivates them.
 - backend lint, typecheck, and build scripts are still unavailable.
 - scaffolder and deploy metadata should be read from `.scaffold/project.json` and `.github/workflows/railway-deploy.yml`, not a missing root `template.json`.
 

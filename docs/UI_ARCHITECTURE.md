@@ -71,3 +71,15 @@
 | Protected route loaders own auth bootstrap | Public routes do not pre-hydrate auth state | Keep loader-owned bootstrap until a public auth-aware surface needs more |
 | Pages mix primitives and raw controls | UI composition is inconsistent | Prefer shared primitives when touching a page |
 | Dashboard copy and error handling are improving incrementally | Some secondary routes still need cleanup | Tighten touched pages without broad UI rewrites |
+
+## Recommended BLN-backed UI opportunities
+This section is a recommended target, not current runtime truth.
+
+| Surface | Why it fits this repo | Depends on |
+|---|---|---|
+| BLN connection setup | Turns tenant bootstrap and node setup into an app-friendly workflow | local BLN context bridge |
+| Delivery workspace | Gives operators a useful list and detail view backed by remote BLN deliveries | BLN-backed deliveries facade |
+| Delivery timeline and diagnostics | Exposes remote lifecycle, handoff, and SMS transport events in one place | BLN-backed events facade |
+| Handoff inbox and outbox | Surfaces incoming verification work and outgoing custody transfers | BLN-backed handoff facade |
+| Dispute queue | Gives the app a bounded operational workflow above the BLN dispute and resolve routes | BLN-backed handoff facade |
+| Stalled-work alerts | Reuses existing notifications, dashboard cards, and worker topology for operational awareness | BLN projections and jobs |

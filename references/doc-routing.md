@@ -7,6 +7,7 @@
 | Task type | Read first | Use skills |
 |---|---|---|
 | docs-only | `AGENTS.md`, touched docs, `docs/IMPLEMENTATION_PLAN.md`, active slice pack when relevant | `repo-prompt-generator` |
+| BLN integration | `AGENTS.md`, `backend/AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/API_SPEC.md`, `docs/DECISIONS.md`, `docs/IMPLEMENTATION_PLAN.md`, active slice pack, `../logistics-api/docs/API_SPEC.md`, `../logistics-api/docs/DECISIONS.md`, `../logistics-api/docs/GAP_ANALYSIS.md` | `repo-prompt-generator`, `backend-dev`, `validation-runner` |
 | backend | `AGENTS.md`, `backend/AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/API_SPEC.md`, `docs/DECISIONS.md`, `docs/DB_SCHEMA.md`, `docs/MIGRATION_WORKFLOW.md`, active slice pack | `repo-prompt-generator`, `backend-dev`, `validation-runner` |
 | frontend | `AGENTS.md`, `frontend/AGENTS.md`, `docs/UI_ARCHITECTURE.md`, `frontend/docs/DESIGN_SYSTEM.md`, `frontend/intelligence.md`, active slice pack when relevant | `repo-prompt-generator`, `frontend-dev`, `validation-runner` |
 | full-stack | `AGENTS.md`, `backend/AGENTS.md`, `frontend/AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/API_SPEC.md`, `docs/UI_ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/MIGRATION_WORKFLOW.md`, active slice pack | `repo-prompt-generator`, `backend-dev`, `frontend-dev`, `validation-runner` |
@@ -19,13 +20,10 @@
 - Read the active slice pack before generating or executing a delivery implementation prompt.
 - Treat completed slices as current-reality docs once the runtime has landed.
 
-## Current delivery queue
-1. `docs/slices/02-delivery-api-contract.md`
-2. `docs/slices/03-foundational-delivery-schema.md`
-3. `docs/slices/04-orders-and-drivers-runtime.md`
-4. `docs/slices/05-deliveries-and-dispatch-runtime.md`
-5. `docs/slices/06-lifecycle-and-delivery-events.md`
-6. `docs/slices/07-tracking-runtime.md`
-7. `docs/slices/08-incident-runtime.md`
-8. `docs/slices/09-queue-backed-jobs.md`
-9. `docs/slices/10-operations-surface.md`
+## Active delivery queue
+1. `docs/slices/11-bln-integration-contract.md`
+2. `docs/slices/12-logistics-client-foundation.md`
+3. `docs/slices/13-tenant-context-and-node-bridge.md`
+4. `docs/slices/14-remote-deliveries-and-events-facade.md`
+5. `docs/slices/15-handoffs-and-custody-workspace.md`
+6. `docs/slices/16-projections-jobs-and-ops-surface.md`

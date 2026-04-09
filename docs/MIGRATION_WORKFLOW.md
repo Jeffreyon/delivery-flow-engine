@@ -25,12 +25,13 @@
 | `db:migrate` is the real schema path and `db:init` delegates to it | No documented delivery migration sequence exists after `0003_*` | Stage future delivery work as new forward-only SQL files after the current scaffold chain |
 | The runner already records ordered applied versions | There is no delivery rollout guidance for splitting foundational, async-platform, tracking, and incident slices | Document a staged rollout before adding any delivery SQL |
 | Seed commands now split between local demo data, remote bootstrap admin access, and deferred delivery data | Production access could be misread as coming from demo users | Keep the bootstrap-admin contract explicit, keep demo users out of production assumptions, and defer delivery seeds until delivery tables and flows are real |
-| The event split and foundational delivery schema are implemented through `0004_*` to `0008_*` | No delivery runtime modules exist yet for the new tables | Add orders, drivers, deliveries, and assignments runtime modules next, then tracking and incidents |
+| The event split and foundational delivery schema are implemented through `0004_*` to `0008_*` | No delivery runtime modules exist yet for the new tables, and the active next queue is now BLN integration rather than more local schema | Do not add more local delivery tables until the external BLN client layer and any local projection role are explicit |
 
 ## Decision rule for Phase 0 work
 | Change type | What to do now |
 |---|---|
 | Docs-only change | No schema command needed |
+| External BLN integration or client-layer change | No schema command needed unless local projection or binding storage is introduced deliberately |
 | Schema-affecting change | Add a new forward-only SQL file, then update `docs/DB_SCHEMA.md` |
 | Local bootstrap change | Keep `db:init` delegating to the migration runner |
 | Workflow or CI change | Keep command names aligned with real package scripts |
@@ -44,9 +45,10 @@
 | 4. Delivery-child cleanup gate | Implemented by `0006_prune_non_delivery_child_events.sql` | Do not treat inherited generic rows such as `user.created` as delivery events after the split |
 | 5. Foundational delivery migrations | Implemented by `0007_create_orders_and_drivers.sql` and `0008_create_deliveries_and_assignments.sql` | Do not imply runtime handlers or seeds already ship just because the tables exist |
 | 6. Async platform bootstrap | Implemented in backend runtime and deploy metadata without a schema change | Do not imply real processors, jobs, or queue-backed delivery behavior exist yet |
-| 7. Tracking migrations | Add `location_pings` when delivery ownership and ingestion rules are ready | Do not imply real-time tracking already ships |
-| 8. Incident migrations | Add `incidents` once lifecycle transitions and delivery events can anchor exception history | Do not imply exception handling already ships |
-| 9. Bootstrap follow-through | Update seeds or bootstrap docs only after delivery tables are real and exercised | Do not claim delivery seed coverage before scripts change |
+| 7. BLN integration track | Add the external client layer, tenant bridge, and BLN-backed facade without a schema change first | Do not imply the dormant local delivery tables are the active next execution path |
+| 8. Projection or binding storage | Add new local tables only if the app needs durable BLN tenant bindings, cached summaries, or app-owned business objects | Do not add local schema merely because the sibling BLN backend already exposes a feature |
+| 9. Tracking and incident migrations | Add `location_pings` or `incidents` only after the BLN-backed facade exists and the app has a clear local ownership reason | Do not imply real-time tracking or local exception handling already ships |
+| 10. Bootstrap follow-through | Update seeds or bootstrap docs only after any new local tables are real and exercised | Do not claim local projection or delivery seed coverage before scripts change |
 
 ## Rules
 - Do not rewrite `0001_baseline.sql` or `0002_phase1_contracts.sql`.
@@ -56,6 +58,7 @@
 - Keep schema docs aligned with the post-migration runtime state.
 - If a delivery rollout is partial, document the deferral rather than flattening it into one speculative migration.
 - Keep later delivery slices on the `events` parent plus `delivery_events` child baseline; do not collapse generic and delivery-specific events back into one table.
+- Keep BLN integration work schema-light by default; add new local tables only when the app needs durable data that `logistics-api` does not already own.
 
 ## Validation notes
 - If schema-affecting work lands, record whether `npm run db:migrate` was run.
