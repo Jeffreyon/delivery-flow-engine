@@ -366,6 +366,81 @@ describe("network service bridge", () => {
     expect(logisticsClient.bootstrapTenant).not.toHaveBeenCalled();
   });
 
+  test("provisionSelfNetwork uses getById before the transaction and getByIdWithClient inside the transaction", async () => {
+    usersRepository.getByIdWithClient = jest.fn().mockResolvedValue(baseUser);
+    usersRepository.getById.mockResolvedValue(baseUser);
+    usersRepository.upsert.mockImplementation(async (id, payload) => ({
+      ...baseUser,
+      ...payload,
+      id,
+    }));
+    tenantMembershipsRepository.listByUserId.mockResolvedValue([]);
+    tenantIntegrationsRepository.upsert.mockResolvedValue({
+      tenantId: "tenant-signup-2",
+      apiKeyEncrypted: "enc-key",
+      apiKeyLast4: "1111",
+      status: "ACTIVE",
+      createdAt: 789,
+      updatedAt: 789,
+    });
+    tenantMembershipsRepository.upsert.mockResolvedValue({
+      userId: "user-1",
+      tenantId: "tenant-signup-2",
+      role: "OWNER",
+      status: "ACTIVE",
+      createdAt: 789,
+      updatedAt: 789,
+    });
+    nodeAssignmentsRepository.upsert.mockResolvedValue({
+      userId: "user-1",
+      tenantId: "tenant-signup-2",
+      nodeId: "node-signup-2",
+      isDefault: true,
+      status: "ACTIVE",
+      createdAt: 789,
+      updatedAt: 789,
+    });
+    tenantApiKeyCipher.encryptTenantApiKey.mockReturnValue("enc-key");
+    logisticsClient.bootstrapTenant.mockResolvedValue({
+      tenant: { id: "tenant-signup-2", name: "Workspace Two", createdAt: 789 },
+      node: {
+        id: "node-signup-2",
+        tenantId: "tenant-signup-2",
+        phoneNumber: "+2348000000022",
+        trustScore: 0,
+        createdAt: 789,
+      },
+      apiKey: {
+        value: "bln_signup_key_2",
+        last4: "1111",
+        createdAt: 789,
+      },
+    });
+
+    const result = await NetworkService.provisionSelfNetwork(
+      {
+        uid: "user-1",
+        email: "user@example.com",
+        isAdmin: false,
+      },
+      {
+        tenantName: "Workspace Two",
+        phoneNumber: "+2348000000022",
+      }
+    );
+
+    expect(usersRepository.getById).toHaveBeenCalledWith("user-1");
+    expect(usersRepository.getByIdWithClient).toHaveBeenCalledWith(
+      expect.objectContaining({ query: expect.any(Function) }),
+      "user-1"
+    );
+    expect(result.tenant).toEqual({
+      id: "tenant-signup-2",
+      name: "Workspace Two",
+      createdAt: 789,
+    });
+  });
+
   test("getNetworkContext returns an unbound issue when the current user has no active membership", async () => {
     usersRepository.getById.mockResolvedValue(baseUser);
     tenantMembershipsRepository.listByUserId.mockResolvedValue([]);
