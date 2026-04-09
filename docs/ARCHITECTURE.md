@@ -11,6 +11,21 @@
 - Shared runtime package: none.
 - Static storage: backend serves local files from `/storage`.
 
+## Planned BLN integration boundary
+This section is the recommended target, not current runtime truth.
+
+Current note:
+- The backend-only logistics client foundation now exists in `backend/src/clients/logisticsClient.js`.
+- The local `/api/v1/network`, `/api/v1/deliveries`, and `/api/v1/handoffs` route families are still planned, not implemented.
+
+| Planned module | Local route prefix | External dependency | Notes |
+|---|---|---|---|
+| logistics client | backend-only | sibling `logistics-api` | Implemented foundation; wraps tenant bootstrap, token exchange, nodes, deliveries, events, and handoffs |
+| network context | `/api/v1/network` | `logistics-api` tenant bootstrap, exchange, and nodes | Resolves the local user or admin session into BLN tenant and node context |
+| deliveries facade | `/api/v1/deliveries` | `logistics-api` deliveries and events | Local backend composes remote delivery state for the frontend |
+| handoffs facade | `/api/v1/handoffs` and `/api/v1/deliveries/:id/handoff-status` | `logistics-api` handoffs | Exposes custody-transfer workflows without leaking BLN secrets to the frontend |
+| projections and jobs | local queue plus optional local DB | `logistics-api` reads, events, and health checks | Deferred until the remote facade exists and the app needs cached summaries or alerts |
+
 ## Frontend runtime boundaries
 | Surface | Paths | Guard | Shell |
 |---|---|---|---|
@@ -33,17 +48,10 @@
 | sessions | `/api/sessions` | authenticated |
 | settings | `/api/settings` | public read |
 
-## Planned Slice 02 delivery route boundary
-This section is a recommended target, not current runtime truth.
-
-| Planned module | Route prefix | Planned actor baseline | Notes |
-|---|---|---|---|
-| orders | `/api/v1/orders` | `admin` | First business-record boundary |
-| drivers | `/api/v1/drivers` | `admin`, plus self-scoped `driver` availability updates | Driver remains `users` plus profile |
-| deliveries | `/api/v1/deliveries` | `admin`, plus assigned `driver` reads and status mutations | List routes stay deferred beyond the first cut |
-| dispatch | `/api/v1/dispatch` | `admin` | Operator duties stay admin-scoped in milestone 1 |
-| tracking | `/api/v1/tracking` and `/api/v1/deliveries/:id/tracking` | `admin`, plus self-scoped or assigned `driver` access | The first write route is `POST /api/v1/tracking/ping` |
-| incidents | deferred | deferred | Public incident endpoints remain out of the first contract cut |
+## Archived local-first delivery route boundary
+- Earlier planning packs assumed this repo would build `orders`, `drivers`, `deliveries`, `dispatch`, `tracking`, and `incidents` as app-owned runtime modules first.
+- That local-first track is now archived while the active queue shifts to integrating the live `logistics-api` BLN surface.
+- The existing local delivery tables remain real schema, but they are not the next active backend contract.
 
 ## Request and data flow
 - Frontend:
@@ -108,9 +116,10 @@ This section is a recommended target, not current runtime truth.
 | Current state | Gap | Recommended target |
 |---|---|---|
 | Generic workspace runtime is implemented | Older docs described broader or different surfaces | Keep architecture docs centered on auth, dashboards, notifications, settings, and admin operations |
+| The repo now has local delivery schema plus a live sibling BLN backend to consume | The new backend-only client foundation still is not wired into local auth or app routes | Add the context bridge and BLN-backed facade before reviving local delivery modules |
 | The migration runner is present and `db:init` delegates to it | Production bootstrap can otherwise be mistaken for demo seeding | Keep architecture docs anchored to the migration runner, the bootstrap-admin seed contract, and the current Railway workflow |
 | The frontend now fails closed when `VITE_API_URL` is missing and Railway boot writes runtime config from the `frontend` service env | Older static builds could silently post `/api/*` requests back to the frontend origin when `VITE_API_URL` was absent at build time | Keep runtime API-base injection explicit so one frontend image can target the matching backend domain per Railway environment |
 | Route handlers still return mostly raw JSON payloads | The API is not yet uniformly shaped | Harden deliberately instead of documenting an idealized contract |
 | `POST /api/events` and `POST /api/delivery-events` are narrowed to admin access | Signed or internal-only ingestion is still undefined, and lifecycle-owned producers do not exist yet | Keep both write surfaces narrow until a clearer producer model exists |
-| The live backend has only unversioned scaffold routes today | The first delivery route boundary and actor matrix would otherwise be inferred ad hoc during implementation | Start delivery routes under `/api/v1` and keep the milestone-1 actor model explicit in docs before runtime modules land |
+| The live backend still has only unversioned scaffold routes today | The first BLN-backed app route boundary would otherwise be inferred ad hoc during implementation | Start the local BLN integration surface under `/api/v1` and keep the local-app-versus-external-BLN split explicit while the client layer stays backend-only |
 | Foundational delivery tables now exist in schema | No orders, drivers, deliveries, or assignments runtime modules exist yet | Treat the new tables as the base for the next backend runtime slices instead of reopening schema design |

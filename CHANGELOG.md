@@ -2,6 +2,16 @@
 
 This file records material changes to how the template should be understood or used.
 
+## 2026-04-09
+
+### Changed
+- Reframed the active Delivery Flow Engine roadmap around integration with the sibling `logistics-api` BLN backend instead of continuing the older local-first delivery runtime queue by default.
+- Updated the planning chain to make `logistics-api` the active external delivery, event, node, and handoff source of truth for the next slices, while keeping the local `orders`, `drivers`, `deliveries`, and `assignments` schema explicit as dormant extension or projection candidates.
+- Rebuilt the active slice-pack queue around BLN contract alignment, logistics client foundation, tenant-context bridging, BLN-backed deliveries and events, handoff and custody workflows, and later projections or operator surfaces.
+- Added the backend-only logistics client foundation plus env contract for the sibling `logistics-api`, with focused backend coverage for service-auth requests, tenant-auth requests, idempotency-header pass-through, query building, and upstream error normalization.
+- Added explicit BLN-backed feature opportunities in the docs so later work can focus on onboarding, custody workflows, diagnostics, and notifications on top of the existing BLN API rather than duplicating core logistics storage first.
+- Updated migration and prompt-routing guidance so future agents do not add more local delivery schema or contract surface by reflex when the next active gap is still the external BLN integration layer.
+
 ## 2026-04-03
 
 ### Changed

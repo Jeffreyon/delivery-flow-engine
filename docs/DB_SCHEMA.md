@@ -76,7 +76,7 @@
 | The repo has one migration-backed schema path for scaffold and delivery tables | Later delivery schema slices such as tracking and incidents are still not implemented | Keep using additive migrations as later delivery slices land |
 | Historical SQL still shows older fields before later removals | Future delivery work could be tempted to rewrite baseline files | Preserve `0001` to `0003` as history and add new files after them |
 | Seed scripts currently cover scaffold identities only | Later prompts could overstate delivery bootstrap readiness or confuse demo users with production access | Keep delivery seeds deferred, but use the dedicated bootstrap-admin path for the first real remote admin account |
-| The parent-child split between `events` and `delivery_events` is now the event baseline, and core delivery tables now exist in schema | No delivery runtime modules or handlers exist yet for the new tables | Use the new schema as the base for orders, drivers, deliveries, and assignments runtime slices before adding tracking and incidents |
+| The parent-child split between `events` and `delivery_events` is now the event baseline, and core delivery tables now exist in schema | No delivery runtime modules or handlers exist yet for the new tables, and the active next queue is now external BLN integration rather than more local delivery schema | Freeze new local delivery-table growth until the BLN client layer and any projection or augmentation role are explicit |
 
 ## Recommended first delivery schema set
 | Planned schema object | Why it belongs in the first envelope | Depends on | Slice 1 status |
@@ -103,3 +103,4 @@
 - Do not describe `delivery_events` as full delivery lifecycle proof before delivery-owned producers and rules are implemented.
 - Do not collapse general platform events back into `delivery_events`; the locked plan is to keep `events` as the parent ledger and `delivery_events` as the delivery-specific child ledger.
 - Keep the scaffold tables and any future delivery tables additive under the same migration runner.
+- Do not add new local delivery schema just because the sibling BLN backend already exposes a feature; add local tables only when the app needs a real projection, cache, or business object that the BLN backend does not own.

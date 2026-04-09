@@ -4,7 +4,9 @@
 - Run order: `9`
 - Depends on: Slices 01, 06, 07, and 08
 - Migration need: `No`
-- Status: `Planned`
+- Status: `Archived`
+
+> Archived note: this local-first runtime pack is no longer the active queue. Use the BLN integration track starting at Slice 11 unless the repo explicitly reopens a local augmentation path.
 
 ## PRD coverage
 - Dispatch assignment jobs

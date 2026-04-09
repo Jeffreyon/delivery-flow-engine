@@ -4,7 +4,9 @@
 - Run order: `2`
 - Depends on: current planning baseline; can run in parallel with Slice 01
 - Migration need: `No`
-- Status: `Implemented on the current branch`
+- Status: `Archived`
+
+> Archived note: this local-first contract pack is no longer the active queue. Use the BLN integration track starting at Slice 11 unless the repo explicitly reopens a local augmentation path.
 
 ## PRD coverage
 - Orders API

@@ -1,406 +1,472 @@
-# 📄 **Product Requirements Document (PRD)**
+# 📄 PRODUCT REQUIREMENTS DOCUMENT
 
-## Delivery Flow Engine
-
----
-
-# 1. Overview
-
-### Product Name
-
-**Delivery Flow Engine**
-
-### Description
-
-Delivery Flow Engine is a backend system designed to manage the full lifecycle of delivery operations—from order creation through dispatch, tracking, and completion—using a modular monolith architecture with event-driven workflows and background job processing.
-
-The system models real-world logistics operations, including non-happy-path scenarios such as failed deliveries, reassignment, and delays.
+## Product: Delivery Flow Engine (Web App)
 
 ---
 
-# 2. Problem Statement
+# 1. 🧠 Overview
 
-Logistics operations are not simple CRUD systems. They involve:
+## Purpose
 
-* stateful workflows (delivery lifecycle)
-* real-time updates (tracking, status)
-* asynchronous processes (notifications, dispatching)
-* operational failures (delays, cancellations, reassignments)
+The Delivery Flow Engine is a **simple, open-source logistics web app** that allows users to:
 
-Most systems:
+* Create and manage deliveries
+* Track delivery lifecycle
+* View event history
 
-* tightly couple logic
-* lack proper state modeling
-* fail under real-world conditions
-
-### Goal
-
-To design a backend system that:
-
-* models delivery operations accurately
-* supports real-time and async workflows
-* remains scalable and resilient
-* provides a clear, extensible architecture
+It is powered by the **Delivery Events Network API** (DEN API).
 
 ---
 
-# 3. Objectives
+## Core Idea
 
-### Primary Objectives
+> This app is a **reference implementation + distribution tool** for your network.
 
-* Model the **delivery lifecycle** as a state machine
-* Enable **driver assignment and dispatch workflows**
-* Support **real-time tracking updates**
-* Maintain an **immutable event log**
-* Handle **async operations via background jobs**
+It should:
 
-### Secondary Objectives
-
-* Provide a clean API surface
-* Enable observability and debugging via events
-* Support extension into distributed systems later
+* Be useful on its own
+* Be easy to deploy
+* Force usage of your API
 
 ---
 
-# 4. System Architecture
+## Goals (V1)
 
-### Architecture Style
+* Simple delivery management UI
+* Backend that integrates with DEN API
+* Clean architecture that allows SDK extraction
+* Fast setup (developer-friendly)
 
-**Modular Monolith + Event-Driven Workflows + Background Workers**
+---
 
-### Components
+## Non-Goals (V1)
 
-#### 1. API Service
+* No advanced analytics
+* No multi-user roles
+* No billing
+* No real-time websockets (polling is fine)
+* No offline-first yet
 
+---
+
+# 2. 🏗️ System Architecture
+
+---
+
+## High-Level Structure
+
+```id="arch1"
+Frontend (React)
+      ↓
+Backend (Node.js)
+      ↓
+Delivery Client Layer (Internal SDK abstraction)
+      ↓
+DEN API (External)
+```
+
+---
+
+## Key Principle
+
+> The backend must NEVER call the API directly.
+> It must go through an abstraction layer.
+
+---
+
+## Components
+
+### 1. Frontend
+
+* React / Next.js
+* UI for deliveries + events
+
+---
+
+### 2. Backend API (App Server)
+
+* Handles frontend requests
+* Uses internal client layer
+
+---
+
+### 3. Delivery Client Layer (VERY IMPORTANT)
+
+This is your **future SDK extraction layer**
+
+Responsibilities:
+
+* Wrap DEN API calls
+* Normalize responses
+* Handle errors
+* Provide simple functions
+
+---
+
+# 3. 🧩 Core Features
+
+---
+
+## 3.1 Create Delivery
+
+User can:
+
+* Create new delivery
+* Add metadata (optional)
+
+---
+
+## 3.2 View Deliveries
+
+* List all deliveries
+* Show:
+
+  * ID
+  * Status
+  * Created date
+
+---
+
+## 3.3 Delivery Details
+
+* View:
+
+  * Status
+  * Metadata
+  * Event timeline
+
+---
+
+## 3.4 Update Delivery (Emit Events)
+
+User can:
+
+* Dispatch
+* Mark in transit
+* Deliver
+* Fail delivery
+
+---
+
+## 3.5 Event Timeline
+
+* Chronological list of events
+* Show:
+
+  * Event type
+  * Timestamp
+  * Payload (optional)
+
+---
+
+# 4. 🎨 Frontend Requirements
+
+---
+
+## Pages
+
+### 1. Dashboard
+
+* List deliveries
+* Button: “Create Delivery”
+
+---
+
+### 2. Create Delivery Modal/Page
+
+* Input:
+
+  * External ID (optional)
+  * Metadata JSON (optional)
+
+---
+
+### 3. Delivery Details Page
+
+* Status badge
+* Action buttons:
+
+  * Dispatch
+  * In Transit
+  * Deliver
+  * Fail
+* Event timeline
+
+---
+
+---
+
+## UI Components
+
+* Table (deliveries)
+* Status badge
+* Timeline component
+* Modal form
+
+---
+
+# 5. ⚙️ Backend Design
+
+---
+
+## Key Rule
+
+> Backend must be **decoupled from DEN API implementation**
+
+---
+
+## Folder Structure (IMPORTANT)
+
+```id="backend-structure"
+backend/
+  ├── routes/
+  │     ├── deliveries.ts
+  │     ├── events.ts
+  │
+  ├── services/
+  │     └── deliveryService.ts
+  │
+  ├── clients/
+  │     └── deliveryClient.ts   <-- THIS IS YOUR SDK BASE
+  │
+  ├── types/
+  │
+  └── config/
+```
+
+---
+
+# 6. 🧰 Delivery Client Layer (SDK Foundation)
+
+---
+
+## Purpose
+
+This layer:
+
+* Wraps all external API calls
+* Will later be extracted as NPM package
+
+---
+
+## Example Interface
+
+```ts id="client-interface"
+class DeliveryClient {
+  createDelivery(data): Promise<Delivery>
+  getDelivery(id): Promise<Delivery>
+  listDeliveries(): Promise<Delivery[]>
+  emitEvent(data): Promise<void>
+  getEvents(deliveryId): Promise<Event[]>
+}
+```
+
+---
+
+## Behavior
+
+* Uses API key internally
 * Handles HTTP requests
-* Contains domain modules:
-
-  * orders
-  * deliveries
-  * drivers
-  * dispatch
-  * tracking
-  * events
-  * notifications
-
-#### 2. Worker Service
-
-* Handles asynchronous processing
-* Consumes queues (Redis + BullMQ)
-* Executes jobs:
-
-  * dispatch assignment
-  * delivery status updates
-  * notifications
-  * anomaly detection
-
-#### 3. Database (PostgreSQL)
-
-* Stores all core entities
-* Maintains relational integrity
-* Stores event logs
-
-#### 4. Queue System (Redis)
-
-* Manages background jobs
-* decouples synchronous and async workflows
+* Normalizes responses
 
 ---
 
-# 5. Core Domain Model
+## Important Constraint
 
-### Entities
-
-* Order
-* Delivery
-* Driver
-* Assignment
-* DeliveryEvent
-* LocationPing
-* Notification
-* Incident
+> NO business logic here
+> ONLY API communication + formatting
 
 ---
 
-# 6. Delivery Lifecycle (State Machine)
-
-### States
-
-```ts
-PENDING
-ASSIGNED
-ACCEPTED
-PICKED_UP
-IN_TRANSIT
-DELIVERED
-FAILED
-RETURNED
-CANCELLED
-```
-
-### Valid Transitions
-
-* PENDING → ASSIGNED
-* ASSIGNED → ACCEPTED
-* ACCEPTED → PICKED_UP
-* PICKED_UP → IN_TRANSIT
-* IN_TRANSIT → DELIVERED
-* IN_TRANSIT → FAILED
-* FAILED → RETURNED
-* PENDING → CANCELLED
-* ASSIGNED → CANCELLED
+# 7. 🌐 Backend API Endpoints (App)
 
 ---
 
-# 7. Functional Requirements
+## 7.1 Create Delivery
 
-## 7.1 Orders Module
-
-### Responsibilities
-
-* Create and manage customer orders
-* Store delivery details
-
-### Endpoints
-
-* `POST /orders`
-* `GET /orders`
-* `GET /orders/:id`
+POST `/api/deliveries`
 
 ---
 
-## 7.2 Deliveries Module
+## 7.2 Get Deliveries
 
-### Responsibilities
-
-* Create delivery records
-* Manage delivery state transitions
-* Link orders and drivers
-
-### Endpoints
-
-* `POST /deliveries`
-* `GET /deliveries/:id`
-* `PATCH /deliveries/:id/status`
+GET `/api/deliveries`
 
 ---
 
-## 7.3 Drivers Module
+## 7.3 Get Delivery Details
 
-### Responsibilities
-
-* Manage driver profiles
-* Track availability
-* Record location updates
-
-### Endpoints
-
-* `POST /drivers`
-* `PATCH /drivers/:id/availability`
-* `POST /drivers/:id/location`
+GET `/api/deliveries/:id`
 
 ---
 
-## 7.4 Dispatch Module
+## 7.4 Emit Event
 
-### Responsibilities
-
-* Assign drivers to deliveries
-* Handle reassignment
-* Manage pending deliveries
-
-### Endpoints
-
-* `POST /dispatch/assign`
-* `POST /dispatch/reassign`
+POST `/api/events`
 
 ---
 
-## 7.5 Tracking Module
+## 7.5 Get Events
 
-### Responsibilities
-
-* Record location pings
-* Provide delivery tracking data
-* Detect stalled deliveries
-
-### Endpoints
-
-* `POST /tracking/ping`
-* `GET /deliveries/:id/tracking`
+GET `/api/events?deliveryId=`
 
 ---
 
-## 7.6 Events Module
+---
 
-### Responsibilities
+## Flow
 
-* Record all system events
-* Provide audit trail
-* Enable downstream processing
-
-### Example Events
-
-* `order.created`
-* `delivery.created`
-* `driver.assigned`
-* `delivery.in_transit`
-* `delivery.delivered`
-* `delivery.failed`
+Frontend → Backend → Client Layer → DEN API
 
 ---
 
-## 7.7 Notifications Module
-
-### Responsibilities
-
-* Notify users and operators
-* Integrate with external systems
-
-### Examples
-
-* SMS/Email/Webhooks
+# 8. 🔐 Environment Configuration
 
 ---
 
-# 8. Background Jobs
+## Required ENV
 
-### Job Types
-
-* Dispatch Assignment Job
-* Delivery Status Update Job
-* Stalled Delivery Detection Job
-* Notification Job
-* Event Reconciliation Job
-
-### Purpose
-
-* Move heavy logic off request cycle
-* Improve system reliability
-* Enable retries and fault tolerance
-
----
-
-# 9. Non-Functional Requirements
-
-## Performance
-
-* Handle concurrent delivery updates
-* Efficient query handling (indexes, relations)
-
-## Reliability
-
-* Retry failed jobs
-* Ensure idempotent operations
-
-## Scalability
-
-* Designed for future service decomposition
-
-## Observability
-
-* Event logs for debugging
-* Structured logging
-
----
-
-# 10. Data Model (High Level)
-
-### Tables
-
-* orders
-* deliveries
-* drivers
-* assignments
-* delivery_events
-* location_pings
-* notifications
-* incidents
-
----
-
-# 11. API Design Principles
-
-* RESTful endpoints
-* Clear resource-based routing
-* Versioned API (`/api/v1`)
-* Validation at boundaries
-* Idempotent operations where possible
-
----
-
-# 12. Event-Driven Design
-
-### Principles
-
-* Every important action emits an event
-* Events are immutable
-* Events can trigger jobs
-
-### Flow Example
-
-```text
-Order Created
-→ Event emitted (order.created)
-→ Delivery created
-→ Event emitted (delivery.created)
-→ Dispatch job queued
+```id="env"
+DEN_API_URL=
+DEN_API_KEY=
 ```
 
 ---
 
-# 13. Security Considerations
+## Behavior
 
-* Input validation
-* Authentication (future scope)
-* Role-based access (admin, driver, operator)
-
----
-
-# 14. Future Enhancements
-
-* Route optimization (AI/heuristics)
-* Multi-node dispatch systems
-* Offline-first sync capabilities
-* Real-time streaming (WebSockets)
-* Analytics dashboard
-* Multi-tenant architecture
+* Backend injects API key into client layer
+* Frontend never sees API key
 
 ---
 
-# 15. Milestones
-
-## Milestone 1
-
-* API scaffold
-* DB schema
-* Orders & deliveries CRUD
-
-## Milestone 2
-
-* Driver module
-* Dispatch logic
-* State machine enforcement
-
-## Milestone 3
-
-* Events system
-* Background jobs (BullMQ)
-
-## Milestone 4
-
-* Tracking
-* Notifications
-* Documentation
+# 9. 🗄️ Data Handling
 
 ---
 
-# 16. Success Criteria
+## Important Decision
 
-The system is considered successful if:
+> This app does NOT store deliveries locally
 
-* Delivery lifecycle is fully modeled
-* Events are consistently recorded
-* Async jobs run reliably
-* API is usable and testable
-* Architecture is clean and extensible
+Everything comes from:
+→ DEN API
+
+---
+
+## Exception (optional later)
+
+* Caching layer (not V1)
+
+---
+
+# 10. ⚡ UX Flow
+
+---
+
+## Create Delivery
+
+User → frontend form → backend → client → DEN API
+→ response → UI update
+
+---
+
+## Update Status
+
+User clicks action → backend → emit event → refresh UI
+
+---
+
+## View Timeline
+
+Frontend → backend → client → events → render
+
+---
+
+# 11. 🧪 Testing
+
+---
+
+## Backend
+
+* Mock client layer for tests
+* Test routes independently
+
+---
+
+## Frontend
+
+* Component tests
+* Basic flow tests
+
+---
+
+# 12. 🚀 Deployment
+
+---
+
+## Requirements
+
+* Easy `.env` setup
+* One command to run
+
+---
+
+## Target
+
+> “Clone → install → run → works in 10 minutes”
+
+---
+
+# 13. 🧠 Design Principles
+
+---
+
+## 1. Simplicity wins
+
+No unnecessary abstractions beyond client layer
+
+---
+
+## 2. API-first thinking
+
+Everything flows through DEN API
+
+---
+
+## 3. Extractability
+
+Client layer must be:
+→ portable
+→ reusable
+→ publishable
+
+---
+
+## 4. Developer Experience
+
+* Clean code
+* Minimal setup
+* Clear README
+
+---
+
+# 14. 🔥 Future Extensions (DO NOT BUILD YET)
+
+* Multi-user auth
+* Webhooks
+* Realtime updates
+* Offline-first
+* Multi-company views
+
+
+# 🔥 Final Insight
+
+This app is not just a tool.
+
+It is:
+
+> **A Trojan horse for your network API**
+
+Every clone:
+→ becomes a node
+→ connects to your infrastructure
