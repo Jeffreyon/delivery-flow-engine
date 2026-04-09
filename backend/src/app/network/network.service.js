@@ -397,7 +397,7 @@ function createNetworkService(dependencies = {}) {
 
   async function getUserById(client, userId) {
     const usersRepository = getUsersRepository();
-    if (typeof usersRepository.getByIdWithClient === "function") {
+    if (client && typeof usersRepository.getByIdWithClient === "function") {
       return usersRepository.getByIdWithClient(client, userId);
     }
 
@@ -406,7 +406,7 @@ function createNetworkService(dependencies = {}) {
 
   async function upsertUser(client, userId, payload) {
     const usersRepository = getUsersRepository();
-    if (typeof usersRepository.upsertWithClient === "function") {
+    if (client && typeof usersRepository.upsertWithClient === "function") {
       return usersRepository.upsertWithClient(client, userId, payload);
     }
 
