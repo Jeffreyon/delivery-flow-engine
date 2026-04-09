@@ -10,25 +10,29 @@ const deliveryIdParamsSchema = z
 const tenantScopedQuerySchema = z
   .object({
     tenantId: z.string().trim().min(1).optional(),
+    nodeId: z.string().trim().min(1).optional(),
   })
   .catchall(z.any());
 
 const createDeliverySchema = z
   .object({
     tenantId: z.string().trim().min(1).optional(),
+    nodeId: z.string().trim().min(1).optional(),
   })
   .catchall(z.any());
 
 const appendDeliveryEventSchema = z
   .object({
     tenantId: z.string().trim().min(1).optional(),
+    nodeId: z.string().trim().min(1).optional(),
   })
   .catchall(z.any());
 
 function stripTenantId(input) {
-  const { tenantId, ...rest } = input || {};
+  const { tenantId, nodeId, ...rest } = input || {};
   return {
     tenantId: tenantId || null,
+    nodeId: nodeId || null,
     payload: rest,
   };
 }
@@ -44,9 +48,10 @@ function createDeliveriesService(dependencies = {}) {
 
   async function createDelivery(authContext, rawPayload, options = {}) {
     const parsed = createDeliverySchema.parse(rawPayload || {});
-    const { tenantId, payload } = stripTenantId(parsed);
+    const { tenantId, nodeId, payload } = stripTenantId(parsed);
     const access = await getNetworkService().resolveTenantAccess(authContext, {
       tenantId,
+      nodeId,
     });
 
     return getClient().createDelivery({
@@ -58,9 +63,10 @@ function createDeliveriesService(dependencies = {}) {
 
   async function listDeliveries(authContext, rawQuery) {
     const parsed = tenantScopedQuerySchema.parse(rawQuery || {});
-    const { tenantId, payload: query } = stripTenantId(parsed);
+    const { tenantId, nodeId, payload: query } = stripTenantId(parsed);
     const access = await getNetworkService().resolveTenantAccess(authContext, {
       tenantId,
+      nodeId,
     });
 
     return getClient().listDeliveries({
@@ -72,9 +78,10 @@ function createDeliveriesService(dependencies = {}) {
   async function getDelivery(authContext, rawParams, rawQuery) {
     const params = deliveryIdParamsSchema.parse(rawParams || {});
     const parsedQuery = tenantScopedQuerySchema.parse(rawQuery || {});
-    const { tenantId } = stripTenantId(parsedQuery);
+    const { tenantId, nodeId } = stripTenantId(parsedQuery);
     const access = await getNetworkService().resolveTenantAccess(authContext, {
       tenantId,
+      nodeId,
     });
 
     return getClient().getDelivery({
@@ -86,9 +93,10 @@ function createDeliveriesService(dependencies = {}) {
   async function listDeliveryEvents(authContext, rawParams, rawQuery) {
     const params = deliveryIdParamsSchema.parse(rawParams || {});
     const parsedQuery = tenantScopedQuerySchema.parse(rawQuery || {});
-    const { tenantId } = stripTenantId(parsedQuery);
+    const { tenantId, nodeId } = stripTenantId(parsedQuery);
     const access = await getNetworkService().resolveTenantAccess(authContext, {
       tenantId,
+      nodeId,
     });
 
     return getClient().listDeliveryEvents({
@@ -100,9 +108,10 @@ function createDeliveriesService(dependencies = {}) {
   async function appendDeliveryEvent(authContext, rawParams, rawPayload, options = {}) {
     const params = deliveryIdParamsSchema.parse(rawParams || {});
     const parsed = appendDeliveryEventSchema.parse(rawPayload || {});
-    const { tenantId, payload } = stripTenantId(parsed);
+    const { tenantId, nodeId, payload } = stripTenantId(parsed);
     const access = await getNetworkService().resolveTenantAccess(authContext, {
       tenantId,
+      nodeId,
     });
 
     return getClient().createDeliveryEvent({

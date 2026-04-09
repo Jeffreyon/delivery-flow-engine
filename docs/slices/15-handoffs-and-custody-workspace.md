@@ -4,7 +4,7 @@
 - Run order: `15`
 - Depends on: Slices 12, 13, and 14
 - Migration need: `No`
-- Status: `Planned`
+- Status: `Implemented`
 
 ## PRD coverage
 - delivery lifecycle actions
@@ -14,9 +14,9 @@
 ## Current state, gap, recommended target
 | Current state | Gap | Recommended target |
 |---|---|---|
-| The sibling BLN backend already supports initiate, retry, verify, dispute, resolve, audit, and status flows | The app exposes none of the custody-transfer workflows yet | Build a local handoff and custody workspace above the BLN API |
-| PIN send, retry, and terminal transport events already exist remotely | Operators cannot see or act on that status from this app | Surface handoff diagnostics, retry, and dispute paths through the app backend and later UI |
-| The current app shells already support admin and authenticated flows | No route or UI plan yet exists for custody workflows | Reuse the current shells and local auth while keeping BLN credentials hidden |
+| The sibling BLN backend already supports initiate, retry, verify, dispute, resolve, audit, and status flows | The app previously exposed none of the custody-transfer workflows | Build and land a local handoff and custody workspace above the BLN API |
+| PIN send, retry, and terminal transport events already exist remotely | Operators still cannot see or act on that status from the app UI | Surface handoff diagnostics, retry, and dispute paths through the app backend now, then add UI later |
+| The current app shells already support admin and authenticated flows | No route or UI plan existed for custody workflows, and secure handoff writes must stay node-scoped within the caller's assigned tenant context | Reuse the current shells and local auth while keeping BLN credentials hidden and minting node sessions backend-only |
 
 ## Scope
 - Implement local handoff routes for status, history, initiate, retry, verify, dispute, and resolve above the logistics client.
@@ -62,6 +62,12 @@
 - The app exposes the main BLN handoff and custody actions through its own backend.
 - Operators can inspect enough status to retry, verify, dispute, or resolve a handoff safely.
 - Focused tests cover the local facade behavior and any approved UI work.
+
+## Delivered
+- Added membership-scoped local handoff routes for status, audit, initiate, retry, verify, and dispute.
+- Kept `POST /api/v1/handoffs/:id/resolve` as the one explicit local admin support exception.
+- Minted short-lived BLN node sessions per request for normal custody actions so secure handoff writes remain node-bound.
+- Added focused backend controller and service coverage for the custody facade.
 
 ## Allowed deferrals
 - inbound SMS flows inside this app

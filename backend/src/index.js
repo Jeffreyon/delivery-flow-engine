@@ -98,6 +98,11 @@ app.use(
   require("./app/deliveries/deliveries.controller")
 );
 app.use(
+  "/api/v1/handoffs",
+  rateLimiter,
+  require("./app/handoffs/handoffs.controller")
+);
+app.use(
   "/api/notifications",
   rateLimiter,
   require("./app/notifications/notifications.controller")
@@ -115,7 +120,7 @@ app.use("/api/sessions", rateLimiter, require("./app/sessions/sessions.controlle
 
 app.use("/", (req, res) => {
   res.send(
-    "Backend API is up. Postgres-backed routes are available under /api/*, /api/v1/network, and /api/v1/deliveries."
+    "Backend API is up. Postgres-backed routes are available under /api/*, /api/v1/network, /api/v1/deliveries, and /api/v1/handoffs."
   );
 });
 

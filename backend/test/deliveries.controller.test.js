@@ -14,10 +14,14 @@ jest.mock("../src/app/deliveries/deliveries.service", () => ({
   listDeliveryEvents: jest.fn(),
   appendDeliveryEvent: jest.fn(),
 }));
+jest.mock("../src/app/handoffs/handoffs.service", () => ({
+  getDeliveryHandoffStatus: jest.fn(),
+}));
 
 const localAuthMiddleware = require("../src/core/middlewares/localAuth");
 const { attachAuthz } = require("../src/core/middlewares/authz");
 const DeliveriesService = require("../src/app/deliveries/deliveries.service");
+const HandoffsService = require("../src/app/handoffs/handoffs.service");
 const errorHandler = require("../src/core/middlewares/errorHandler");
 const deliveriesRouter = require("../src/app/deliveries/deliveries.controller");
 
@@ -32,6 +36,7 @@ describe("remote deliveries facade controller", () => {
     DeliveriesService.getDelivery.mockReset();
     DeliveriesService.listDeliveryEvents.mockReset();
     DeliveriesService.appendDeliveryEvent.mockReset();
+    HandoffsService.getDeliveryHandoffStatus.mockReset();
 
     localAuthMiddleware.mockImplementation((req, res, next) => {
       req.user = { uid: "user-1", email: "user@example.com" };
@@ -145,6 +150,34 @@ describe("remote deliveries facade controller", () => {
       {
         idempotencyKey: "idem-2",
       }
+    );
+  });
+
+  test("GET /api/v1/deliveries/:id/handoff-status returns the custody status", async () => {
+    HandoffsService.getDeliveryHandoffStatus.mockResolvedValue({
+      delivery: { id: "delivery-1", status: "IN_TRANSIT" },
+      handoff: { id: "handoff-1", status: "REQUESTED" },
+    });
+
+    const response = await request(app).get(
+      "/api/v1/deliveries/delivery-1/handoff-status"
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      delivery: { id: "delivery-1", status: "IN_TRANSIT" },
+      handoff: { id: "handoff-1", status: "REQUESTED" },
+    });
+    expect(HandoffsService.getDeliveryHandoffStatus).toHaveBeenCalledWith(
+      {
+        uid: "user-1",
+        email: "user@example.com",
+        isAdmin: false,
+      },
+      {
+        id: "delivery-1",
+      },
+      {}
     );
   });
 });

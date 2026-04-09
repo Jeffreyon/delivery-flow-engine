@@ -201,6 +201,26 @@ function createLogisticsClient(options) {
     });
   }
 
+  function apiKeyRequest(options) {
+    const apiKey = String(options?.apiKey || "").trim();
+
+    if (!apiKey) {
+      throw new Error("apiKey is required for tenant API-key logistics-api requests");
+    }
+
+    const bodyHeaders =
+      options.body === undefined ? {} : { "Content-Type": "application/json" };
+
+    return request({
+      ...options,
+      headers: {
+        ...buildBaseHeaders(options),
+        ...bodyHeaders,
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+  }
+
   function tenantRequest(options) {
     const tenantCredential = String(options?.tenantCredential || "").trim();
 
@@ -253,6 +273,15 @@ function createLogisticsClient(options) {
         method: "POST",
         path: "/api/tenant-auth/exchange",
         body: payload,
+      });
+    },
+
+    createNodeSession({ apiKey, payload }) {
+      return apiKeyRequest({
+        method: "POST",
+        path: "/api/node-auth/session",
+        body: payload,
+        apiKey,
       });
     },
 

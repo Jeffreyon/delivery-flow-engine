@@ -8,7 +8,7 @@
 | Area | Current state | Gap | Recommended target |
 |---|---|---|---|
 | Plan identity | The live repo is still an auth and admin scaffold, while the PRD targets a delivery app powered by an external delivery network | The earlier queue still leaned toward a local-first delivery runtime | Reframe the active queue around integrating the sibling `logistics-api` BLN surface first |
-| External contract | The sibling `logistics-api` now exposes tenant bootstrap, token exchange, deliveries, events, nodes, and handoffs, and Delivery Flow Engine now has a backend-only client layer plus the first local context bridge and remote delivery facade for that contract | No local handoff facade routes consume the bridge yet | Use the current client, context bridge, and remote delivery facade as the only integration seam before implementing more feature routes |
+| External contract | The sibling `logistics-api` now exposes tenant bootstrap, support-only tenant exchange, node-session auth, deliveries, events, nodes, and handoffs, and Delivery Flow Engine now has a backend-only client layer plus local context, delivery, and handoff facades for that contract | No operator-facing UI or projection layer consumes the bridge yet | Use the current local API boundary as the only integration seam before implementing more feature routes |
 | Local schema | `orders`, `drivers`, `deliveries`, and `assignments` exist locally | Those tables could be mistaken for the next source-of-truth path even though the BLN backend already owns live delivery state | Treat the local delivery schema as dormant until a deliberate projection or augmentation decision is made |
 | Validation truth | Frontend checks exist; backend exposes tests only | Later slice prompts could overstate available proof | Keep every later slice honest about the real validation commands |
 
@@ -16,9 +16,9 @@
 | Workstream | Current state | Gap | Recommended target |
 |---|---|---|---|
 | 1. BLN contract alignment | The PRD names an external delivery API, and the sibling `logistics-api` now supplies it | The active docs and pack queue do not yet map that product boundary clearly | Make the external BLN contract the active planning baseline |
-| 2. Client and auth bridge | The backend-only logistics client plus the first local tenant-context bridge now exist | The app still does not expose BLN handoffs through local routes | Reuse the current bridge for the next route families instead of widening auth again |
-| 3. BLN-backed app routes | Local `/api/v1/network/*` and `/api/v1/deliveries*` now proxy or compose BLN data | The frontend still has no custody routes or operator UI to call | Build a local facade for handoffs and later UI features on the same boundary |
-| 4. Custody feature exposure | The BLN backend already supports handoffs, retries, disputes, resolution, and transport diagnostics | The app exposes none of those differentiators today | Make custody and handoff workflows the first real product features on top of the BLN API |
+| 2. Client and auth bridge | The backend-only logistics client plus the first local tenant-integration, membership, and node-assignment bridge now exist | The bridge is still backend-only and local role semantics are still intentionally small | Reuse the current bridge for UI and projection slices instead of widening auth again |
+| 3. BLN-backed app routes | Local `/api/v1/network/*`, `/api/v1/deliveries*`, and `/api/v1/handoffs*` now proxy or compose BLN data | The frontend still has no custody routes or operator UI to call | Build UI features on the same boundary instead of bypassing it |
+| 4. Custody feature exposure | The BLN backend already supports handoffs, retries, disputes, resolution, and transport diagnostics, and the app now exposes those flows locally | Operators still cannot use those differentiators from the app UI | Make custody and handoff workflows the first real product features on top of the BLN API |
 | 5. Projection and async jobs | Redis plus BullMQ and a worker already exist locally | No BLN projection, alerting, or sync jobs exist yet | Reuse the async baseline later for cached summaries, stalled-handoff alerts, and notifications |
 | 6. Dormant local delivery schema | Local delivery tables already exist | They could keep attracting more local-first runtime work | Keep them archived until the app needs business objects or projections the BLN backend does not own |
 
@@ -30,11 +30,9 @@
 - Keep later implementation prompts explicit about unavailable backend lint, typecheck, and build scripts.
 
 ## Recommended execution order
-1. Lock the BLN integration contract and the local app boundary above the sibling `logistics-api`.
-2. Add the backend-only logistics client and env contract.
-3. Build the handoff and custody facade on top of the implemented local tenant-context bridge and remote delivery facade.
-6. Add projection or sync jobs only after the remote facade exists and real product needs justify caching.
-7. Revisit the dormant local delivery schema only after the app has a clear augmentation role beyond the BLN source of truth.
+1. Build the first custody and delivery workspace UI on top of the implemented local tenant-context, delivery, and handoff facades.
+2. Add projection or sync jobs only after the remote facade exists and real product needs justify caching.
+3. Revisit the dormant local delivery schema only after the app has a clear augmentation role beyond the BLN source of truth.
 
 ## Implementation-ready slice packs
 | Pack | File | Type | Run order | Status | Notes |
@@ -51,10 +49,11 @@
 | 10 | `docs/slices/10-operations-surface.md` | docs-only -> frontend or full-stack | 10 | Archived | Older local-first UI pack |
 | 11 | `docs/slices/11-bln-integration-contract.md` | docs-only -> backend | 11 | Implemented | Locks the BLN integration boundary and active queue |
 | 12 | `docs/slices/12-logistics-client-foundation.md` | backend | 12 | Implemented | Adds the backend-only client layer and env contract for `logistics-api` |
-| 13 | `docs/slices/13-tenant-context-and-node-bridge.md` | backend | 13 | Implemented | Adds local BLN tenant or node context plus bootstrap and node bridge routes |
+| 13 | `docs/slices/13-tenant-context-and-node-bridge.md` | backend | 13 | Implemented | Adds local BLN tenant integration, membership, encrypted tenant API key storage, node assignments, backend-only node-session exchange, and bootstrap or node bridge routes |
 | 14 | `docs/slices/14-remote-deliveries-and-events-facade.md` | backend | 14 | Implemented | Adds BLN-backed deliveries and events routes under the local app |
-| 15 | `docs/slices/15-handoffs-and-custody-workspace.md` | backend or full-stack | 15 | Planned | Adds handoff, custody, dispute, and diagnostics flows on top of the BLN API |
+| 15 | `docs/slices/15-handoffs-and-custody-workspace.md` | backend or full-stack | 15 | Implemented | Adds handoff, custody, dispute, and diagnostics flows on top of the BLN API with membership-scoped node-session auth |
 | 16 | `docs/slices/16-projections-jobs-and-ops-surface.md` | full-stack | 16 | Planned | Adds cached summaries, alerts, and operator UI on top of the BLN-backed routes |
+| 17 | `docs/slices/17-tenant-user-and-node-management.md` | backend | 17 | Implemented | Adds admin-side tenant-member management and node-assignment persistence above the BLN bridge |
 
 ## BLN-backed feature opportunities
 | Feature | BLN dependency | Why it belongs in Delivery Flow Engine |
@@ -73,5 +72,4 @@
 | Action | Files | Purpose | Follow-on ownership |
 |---|---|---|---|
 | 1. Start from the active BLN integration pack index | `docs/slices/README.md` | Use the new integration queue instead of reviving the archived local-first packs by default | docs-only |
-| 2. Land BLN-backed handoff workflows next | `docs/slices/15-handoffs-and-custody-workspace.md` | Build the first real custody features on top of the BLN API and the implemented delivery facade | backend or full-stack |
-| 4. Add projections, alerts, and operator UI only after the BLN facade exists | `docs/slices/16-projections-jobs-and-ops-surface.md` | Keep async work and UI expansion bounded and evidence-backed | full-stack |
+| 2. Land operator delivery and custody surfaces next | `docs/slices/16-projections-jobs-and-ops-surface.md` | Build UI, summaries, and alerts on top of the implemented membership-scoped BLN route facade instead of widening backend ownership | full-stack |
