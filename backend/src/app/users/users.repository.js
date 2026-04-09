@@ -16,8 +16,8 @@ function mapRow(row) {
   };
 }
 
-async function getById(id) {
-  const result = await query(
+async function getByIdWithClient(client, id) {
+  const result = await client.query(
     `SELECT id,
             email,
             display_name,
@@ -88,7 +88,39 @@ async function list(limit = 50) {
   return result.rows.map(mapRow).filter(Boolean);
 }
 
-async function upsert(id, data) {
+async function listByIdsWithClient(client, ids) {
+  const normalizedIds = Array.from(
+    new Set(
+      (Array.isArray(ids) ? ids : [])
+        .map((id) => String(id || "").trim())
+        .filter(Boolean)
+    )
+  );
+
+  if (!normalizedIds.length) {
+    return [];
+  }
+
+  const result = await client.query(
+    `SELECT id,
+            email,
+            display_name,
+            photo_url,
+            preferences,
+            roles,
+            email_verified,
+            created_at,
+            updated_at
+     FROM users
+     WHERE id = ANY($1::text[])
+     ORDER BY created_at DESC`,
+    [normalizedIds]
+  );
+
+  return result.rows.map(mapRow).filter(Boolean);
+}
+
+async function upsertWithClient(client, id, data) {
   const prepared = {
     display_name: data.displayName || null,
     email: data.email || null,
@@ -100,7 +132,7 @@ async function upsert(id, data) {
     password_hash: data.passwordHash || null,
   };
 
-  await query(
+  await client.query(
     `INSERT INTO users (
       id,
       email,
@@ -137,13 +169,23 @@ async function upsert(id, data) {
     ]
   );
 
-  return getById(id);
+  return getByIdWithClient(client, id);
 }
 
 module.exports = {
-  getById,
+  getById(id) {
+    return getByIdWithClient({ query }, id);
+  },
   getByEmail,
   getAuthRecordByEmail,
   list,
-  upsert,
+  listByIds(ids) {
+    return listByIdsWithClient({ query }, ids);
+  },
+  upsert(id, data) {
+    return upsertWithClient({ query }, id, data);
+  },
+  getByIdWithClient,
+  listByIdsWithClient,
+  upsertWithClient,
 };

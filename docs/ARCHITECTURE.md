@@ -18,14 +18,14 @@ Current note:
 - The backend-only logistics client foundation now exists in `backend/src/clients/logisticsClient.js`.
 - The local `/api/v1/network` route family now exists as the first BLN bridge.
 - The local `/api/v1/deliveries` route family now exists as the first BLN-backed delivery facade.
-- The local `/api/v1/handoffs` route family is still planned, not implemented.
+- The local `/api/v1/handoffs` route family and `/api/v1/deliveries/:id/handoff-status` now exist as the first BLN-backed custody facade.
 
 | Planned module | Local route prefix | External dependency | Notes |
 |---|---|---|---|
-| logistics client | backend-only | sibling `logistics-api` | Implemented foundation; wraps tenant bootstrap, token exchange, nodes, deliveries, events, and handoffs |
-| network context | `/api/v1/network` | `logistics-api` tenant bootstrap, exchange, and nodes | Resolves the local user or admin session into BLN tenant and node context |
+| logistics client | backend-only | sibling `logistics-api` | Implemented foundation; wraps tenant bootstrap, support-only tenant exchange, node-session exchange, nodes, deliveries, events, and handoffs |
+| network context | `/api/v1/network` | `logistics-api` tenant bootstrap, node-session exchange, and nodes | Resolves the local user or admin session into a membership-scoped BLN tenant and node context, and now exposes admin-side tenant-member and node-assignment management |
 | deliveries facade | `/api/v1/deliveries` | `logistics-api` deliveries and events | Local backend composes remote delivery state for the frontend |
-| handoffs facade | `/api/v1/handoffs` and `/api/v1/deliveries/:id/handoff-status` | `logistics-api` handoffs | Exposes custody-transfer workflows without leaking BLN secrets to the frontend |
+| handoffs facade | `/api/v1/handoffs` and `/api/v1/deliveries/:id/handoff-status` | `logistics-api` handoffs | Implemented; exposes custody-transfer workflows without leaking BLN secrets to the frontend |
 | projections and jobs | local queue plus optional local DB | `logistics-api` reads, events, and health checks | Deferred until the remote facade exists and the app needs cached summaries or alerts |
 
 ## Frontend runtime boundaries
@@ -42,8 +42,9 @@ Current note:
 |---|---|---|
 | auth | `/api/auth` | mixed public and authenticated routes |
 | users | `/api/users` | authenticated; admin for list, self or admin for read and update |
-| network | `/api/v1/network` | authenticated; admin-only bootstrap, actor-scoped context and node bridge routes |
+| network | `/api/v1/network` | authenticated; admin-only bootstrap, tenant-member management, and support node routes plus actor-scoped context and node bridge routes |
 | deliveries | `/api/v1/deliveries` | authenticated; actor-scoped BLN delivery and event facade routes |
+| handoffs | `/api/v1/handoffs` and `/api/v1/deliveries/:id/handoff-status` | authenticated; actor-scoped BLN custody facade routes, plus admin-only local dispute resolution |
 | roles | `/api/roles` | admin-only |
 | notifications | `/api/notifications` | authenticated |
 | events | `/api/events` | public list, admin create |
@@ -77,9 +78,13 @@ Current note:
 - Protected routes accept the cookie and still allow bearer fallback.
 - RBAC is derived from `users.roles` plus `roles.permissions`.
 - `req.authz.roles` contains role documents, not only role ids.
-- The first BLN bridge stores tenant or node binding in `users.preferences.bln`.
-- The backend exchanges short-lived tenant access tokens on demand and does not persist them locally.
-- The first BLN-backed delivery facade also uses exchanged tenant access for admin requests, because the sibling BLN delivery and event routes are tenant-scoped.
+- The durable BLN tenant integration now lives in `bln_tenant_accounts`.
+- Local BLN tenant access is granted through `bln_tenant_memberships`.
+- Local BLN node act-as rights are granted through `bln_node_assignments`.
+- `users.preferences.bln` remains only as a compatibility mirror of `{ tenantId, nodeId }`.
+- The backend stores the tenant API key only in encrypted backend storage and never returns it to the browser.
+- Owner-scoped delivery and handoff routes mint a short-lived node session token on demand through the sibling `logistics-api` and do not persist that token locally.
+- Local admin support keeps one exception: handoff resolution still uses service-backed tenant exchange because the sibling handoff resolve route is tenant-readable but not service-readable.
 
 ## Frontend composition model
 - `main.tsx` wraps the app with:
@@ -123,10 +128,10 @@ Current note:
 | Current state | Gap | Recommended target |
 |---|---|---|
 | Generic workspace runtime is implemented | Older docs described broader or different surfaces | Keep architecture docs centered on auth, dashboards, notifications, settings, and admin operations |
-| The repo now has local delivery schema plus a live sibling BLN backend to consume | The first BLN bridge and remote delivery facade now exist, but custody and handoff routes still are not exposed through local routes | Extend the same backend-owned bridge pattern to custody workflows before reviving local delivery modules |
+| The repo now has local delivery schema plus a live sibling BLN backend to consume | The BLN-backed bridge now reaches network context, deliveries, events, and handoffs through membership-scoped node sessions, but operator-facing UI and projections still do not exist | Build UI and later projections on top of the existing backend-owned bridge instead of widening local delivery ownership |
 | The migration runner is present and `db:init` delegates to it | Production bootstrap can otherwise be mistaken for demo seeding | Keep architecture docs anchored to the migration runner, the bootstrap-admin seed contract, and the current Railway workflow |
 | The frontend now fails closed when `VITE_API_URL` is missing and Railway boot writes runtime config from the `frontend` service env | Older static builds could silently post `/api/*` requests back to the frontend origin when `VITE_API_URL` was absent at build time | Keep runtime API-base injection explicit so one frontend image can target the matching backend domain per Railway environment |
 | Route handlers still return mostly raw JSON payloads | The API is not yet uniformly shaped | Harden deliberately instead of documenting an idealized contract |
 | `POST /api/events` and `POST /api/delivery-events` are narrowed to admin access | Signed or internal-only ingestion is still undefined, and lifecycle-owned producers do not exist yet | Keep both write surfaces narrow until a clearer producer model exists |
-| The live backend now has `/api/v1/network`, `/api/v1/deliveries`, plus unversioned scaffold routes | The BLN-backed app boundary is still incomplete, and the next route families could drift back into ad hoc integration | Keep the remaining BLN-backed app surface under `/api/v1` and preserve the local-app-versus-external-BLN split |
-| Foundational delivery tables now exist in schema | No orders, drivers, deliveries, or assignments runtime modules exist yet | Treat the new tables as the base for the next backend runtime slices instead of reopening schema design |
+| The live backend now has `/api/v1/network`, `/api/v1/deliveries`, `/api/v1/handoffs`, plus unversioned scaffold routes | The BLN-backed app boundary is still missing the first UI and projection consumers, and later work could drift back into ad hoc integration or back into service-secret runtime auth | Keep the remaining BLN-backed app surface under `/api/v1` and preserve the local-app-versus-external-BLN split with membership-scoped node-session auth |
+| Foundational delivery tables now exist in schema | No orders, drivers, deliveries, or assignments runtime modules exist yet | Keep those tables dormant until a later projection or augmentation need is explicit instead of treating them as the next runtime default |

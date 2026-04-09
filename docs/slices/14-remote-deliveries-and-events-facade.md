@@ -66,7 +66,7 @@
 - Added `GET /api/v1/deliveries/:id`.
 - Added `GET /api/v1/deliveries/:id/events`.
 - Added `POST /api/v1/deliveries/:id/events`.
-- Reused the network bridge so all delivery and event routes resolve tenant-scoped BLN access through the local backend.
+- Reused the network bridge so all delivery and event routes resolve membership-scoped BLN access through the local backend and mint node sessions per request.
 - Forwarded `Idempotency-Key` for delivery create and delivery-event append routes.
 - Added focused backend service and controller coverage for the facade.
 

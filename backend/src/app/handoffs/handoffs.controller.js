@@ -1,9 +1,8 @@
 const express = require("express");
 const asyncHandler = require("../../core/middlewares/asyncHandler");
 const localAuthMiddleware = require("../../core/middlewares/localAuth");
-const { attachAuthz } = require("../../core/middlewares/authz");
-const DeliveriesService = require("./deliveries.service");
-const HandoffsService = require("../handoffs/handoffs.service");
+const { attachAuthz, requireAdmin } = require("../../core/middlewares/authz");
+const HandoffsService = require("./handoffs.service");
 
 const router = express.Router();
 
@@ -26,7 +25,7 @@ router.use(localAuthMiddleware, attachAuthz);
 router.get(
   "/",
   asyncHandler(async (req, res) => {
-    const result = await DeliveriesService.listDeliveries(
+    const result = await HandoffsService.listHandoffs(
       buildActor(req),
       req.query || {}
     );
@@ -35,9 +34,9 @@ router.get(
 );
 
 router.post(
-  "/",
+  "/initiate",
   asyncHandler(async (req, res) => {
-    const result = await DeliveriesService.createDelivery(
+    const result = await HandoffsService.initiateHandoff(
       buildActor(req),
       req.body || {},
       {
@@ -48,22 +47,38 @@ router.post(
   })
 );
 
-router.get(
-  "/:id/events",
+router.post(
+  "/verify",
   asyncHandler(async (req, res) => {
-    const result = await DeliveriesService.listDeliveryEvents(
+    const result = await HandoffsService.verifyHandoff(
       buildActor(req),
-      req.params || {},
-      req.query || {}
+      req.body || {},
+      {
+        idempotencyKey: getIdempotencyKey(req),
+      }
     );
     res.json(result);
   })
 );
 
 router.post(
-  "/:id/events",
+  "/dispute",
   asyncHandler(async (req, res) => {
-    const result = await DeliveriesService.appendDeliveryEvent(
+    const result = await HandoffsService.disputeHandoff(
+      buildActor(req),
+      req.body || {},
+      {
+        idempotencyKey: getIdempotencyKey(req),
+      }
+    );
+    res.json(result);
+  })
+);
+
+router.post(
+  "/:id/retry",
+  asyncHandler(async (req, res) => {
+    const result = await HandoffsService.retryHandoff(
       buildActor(req),
       req.params || {},
       req.body || {},
@@ -71,17 +86,21 @@ router.post(
         idempotencyKey: getIdempotencyKey(req),
       }
     );
-    res.status(201).json(result);
+    res.json(result);
   })
 );
 
-router.get(
-  "/:id/handoff-status",
+router.post(
+  "/:id/resolve",
+  requireAdmin,
   asyncHandler(async (req, res) => {
-    const result = await HandoffsService.getDeliveryHandoffStatus(
+    const result = await HandoffsService.resolveHandoff(
       buildActor(req),
       req.params || {},
-      req.query || {}
+      req.body || {},
+      {
+        idempotencyKey: getIdempotencyKey(req),
+      }
     );
     res.json(result);
   })
@@ -90,7 +109,7 @@ router.get(
 router.get(
   "/:id",
   asyncHandler(async (req, res) => {
-    const result = await DeliveriesService.getDelivery(
+    const result = await HandoffsService.getHandoff(
       buildActor(req),
       req.params || {},
       req.query || {}

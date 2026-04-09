@@ -55,12 +55,38 @@ router.get(
 
 router.post(
   "/nodes",
+  requireAdmin,
   asyncHandler(async (req, res) => {
     const result = await NetworkService.createNetworkNode(
       buildActor(req),
       req.body || {}
     );
     res.status(201).json(result);
+  })
+);
+
+router.get(
+  "/users",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const result = await NetworkService.listTenantUsers(
+      buildActor(req),
+      req.query || {}
+    );
+    res.json(result);
+  })
+);
+
+router.put(
+  "/users/:userId",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const result = await NetworkService.upsertTenantUserAccess(
+      buildActor(req),
+      req.params || {},
+      req.body || {}
+    );
+    res.json(result);
   })
 );
 

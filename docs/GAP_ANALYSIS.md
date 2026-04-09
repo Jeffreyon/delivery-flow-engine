@@ -3,10 +3,12 @@
 ## Executive summary
 - The repo still ships a Phase 0 workspace/account/admin scaffold.
 - `docs/PRD.md` describes Delivery Flow Engine as a delivery app that is powered by an external delivery network API.
-- The sibling `logistics-api` repo now implements that BLN surface for deliveries, events, nodes, tenant bootstrap, token exchange, and handoffs.
-- The backend-only logistics client foundation and the first local tenant-context bridge now exist.
+- The sibling `logistics-api` repo now implements that BLN surface for deliveries, events, nodes, tenant bootstrap, support-only tenant exchange, node-session auth, and handoffs.
+- The backend-only logistics client foundation and the first local membership-scoped tenant-context bridge now exist.
 - The BLN-backed delivery and event facade now exists above that bridge.
-- The next runtime gap is the missing handoff and custody facade plus the first operator-visible delivery UI above the current backend routes.
+- The BLN-backed handoff and custody facade now exists above that bridge.
+- The first admin-side tenant-member and node-assignment management routes now exist above that bridge.
+- The next runtime gap is the missing operator-visible custody and delivery UI above the current BLN-backed backend routes.
 - The local delivery schema that already exists in this repo should not be mistaken for the next source-of-truth path while the BLN integration layer is still absent.
 
 ## Current runtime baseline
@@ -37,14 +39,14 @@
 | Area | Current state | Gap | Recommended target |
 |---|---|---|---|
 | Product identity and scope | The live repo is a generic auth, dashboard, and admin scaffold with no external delivery integration code | The PRD target is a delivery app that consumes an external network API | Treat the current scaffold as the app shell and build the BLN integration layer before local delivery expansion |
-| External BLN client layer | A backend-only client module plus env contract now exist for the sibling `logistics-api` | Handoff facade routes still are not consuming that client yet | Keep the new client layer as the only integration seam and build the remaining app routes on top of it instead of adding ad hoc fetch calls |
-| Auth and tenant context | Local auth now bridges into BLN tenant and node context through `/api/v1/network/*`, `users.preferences.bln`, and `/api/v1/deliveries*` | The bridge still stops before remote handoffs and custody routes | Reuse the current bridge and avoid inventing a second local auth model |
+| External BLN client layer | A backend-only client module plus env contract now exist for the sibling `logistics-api`, and the local delivery plus handoff facades now consume it | The frontend still has no first-party operator workflow on top of those routes | Keep the client layer as the only integration seam and build UI or projection work on top of it instead of adding ad hoc fetch calls |
+| Auth and tenant context | Local auth now bridges into BLN tenant and node context through `/api/v1/network/*`, `bln_tenant_accounts`, `bln_tenant_memberships`, `bln_node_assignments`, `/api/v1/deliveries*`, and `/api/v1/handoffs*`, and admins can now manage tenant members plus node assignments through `/api/v1/network/users*` | The bridge is still backend-only and local admins keep only narrow support exceptions, but richer local role semantics are still deferred | Reuse the current membership-and-assignment bridge and avoid inventing a second local auth model before a real tenant UI need exists |
 | Source of truth for deliveries | Current tables include `orders`, `drivers`, `deliveries`, and `assignments`, but no runtime handlers use them | The slice queue could drift into building a second delivery system even though `logistics-api` already owns live deliveries, events, and handoffs | Treat `logistics-api` as the active source of truth and keep the local delivery schema dormant until a later projection or augmentation decision is explicit |
-| API surface | The backend exposes unversioned scaffold routes plus `/api/v1/network/*` and `/api/v1/deliveries*` | BLN-backed handoff app routes still do not exist in runtime code | Extend the `/api/v1/*` integration surface to custody and handoffs through the local backend |
-| Handoff and custody feature exposure | `logistics-api` now supports handoff initiate, retry, verify, dispute, resolve, audit, status, and transport diagnostics | This app exposes none of the BLN differentiators yet | Build the first delivery-flow-engine features around custody, handoff inbox or outbox, dispute handling, and diagnostics instead of duplicating basic delivery storage first |
+| API surface | The backend exposes unversioned scaffold routes plus `/api/v1/network/*`, `/api/v1/deliveries*`, and `/api/v1/handoffs*` | The frontend still has no first-party custody or delivery workspace on top of those routes | Build UI and later projection slices on the same local API boundary |
+| Handoff and custody feature exposure | `logistics-api` now supports handoff initiate, retry, verify, dispute, resolve, audit, status, and transport diagnostics, and this repo now exposes those flows locally | Operators still cannot act on those differentiators from the app UI | Build the first delivery-flow-engine features around custody inbox or outbox views, dispute handling, and diagnostics instead of duplicating basic delivery storage first |
 | Async architecture | BullMQ and `ioredis` are installed, shared queue config exists, `backend/worker.js` can boot a worker against `REDIS_URL`, and the live Railway project now has `worker` plus `Redis` in both environments | No named queues, processors, retries, or BLN sync jobs are implemented yet | Reuse the live worker and Redis topology later for BLN projection refresh, stalled-handoff alerts, and notification fanout |
 | Actor and UI model | Auth, user dashboard, and admin dashboard exist; current roles are `admin` and `user` | There is still no operator-facing BLN setup, custody, or delivery UI | Keep admin as the first operator fallback, then add BLN-backed delivery and handoff surfaces on top of the existing shells |
-| Harness metadata truth | The migration runner is present, harness docs point at `.scaffold/project.json`, the Railway workflow includes a `worker` deploy target, the live Railway project now matches that `Redis` plus `worker` topology in both environments, and the active pack queue now points at BLN integration | The runtime still lacks the first context and facade slices even though the docs are now aligned | Move from planning into the context bridge and BLN-backed route slices instead of reopening local-first runtime packs |
+| Harness metadata truth | The migration runner is present, harness docs point at `.scaffold/project.json`, the Railway workflow includes a `worker` deploy target, the live Railway project now matches that `Redis` plus `worker` topology in both environments, and the active pack queue now points at BLN integration | The runtime still lacks the first operator UI and projection slices even though the backend bridge is now real | Move from backend integration work into UI or projection slices instead of reopening local-first runtime packs |
 
 ## Current scaffold hardening gaps
 | Area | Current state | Gap | Recommended target |
@@ -61,10 +63,10 @@
 - `db:init` now delegates to the migration runner instead of maintaining a separate schema path.
 - Legacy registry and per-user module metadata were removed from the active runtime surface.
 - Core docs and harness files now point to repo-true frontend guidance paths under `frontend/docs/`.
-- The repo now has a backend-only logistics client foundation plus the first local BLN tenant-context bridge and remote delivery facade.
+- The repo now has a backend-only logistics client foundation plus the first local BLN owner bridge, remote delivery facade, and remote handoff facade.
 
 ## Planning implication
 - Use `docs/IMPLEMENTATION_PLAN.md` as the active execution queue for the next delivery slices.
 - Treat the sibling `logistics-api` repo as the active external delivery backbone for the next execution queue.
-- Build custody features and later projections on top of the new backend client layer, context bridge, and remote delivery facade before reviving the local-first delivery schema track.
+- Build operator custody features and later projections on top of the new backend client layer, owner bridge, remote delivery facade, and remote handoff facade before reviving the local-first delivery schema track.
 - Keep current-reality docs truthful while each later slice lands, and update planning docs whenever slice order or prerequisites change.

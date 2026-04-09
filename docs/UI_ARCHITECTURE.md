@@ -78,9 +78,10 @@ This section is a recommended target, not current runtime truth.
 | Surface | Why it fits this repo | Depends on |
 |---|---|---|
 | BLN connection setup | Turns tenant bootstrap and node setup into an app-friendly workflow | local BLN context bridge |
+| Tenant member and node management | Gives admins a first-party way to assign dashboard users to a tenant and choose which BLN nodes they can act through | implemented `/api/v1/network/users*` backend routes |
 | Delivery workspace | Gives operators a useful list and detail view backed by remote BLN deliveries | BLN-backed deliveries facade |
-| Delivery timeline and diagnostics | Exposes remote lifecycle, handoff, and SMS transport events in one place | BLN-backed events facade |
-| Handoff inbox and outbox | Surfaces incoming verification work and outgoing custody transfers | BLN-backed handoff facade |
-| Dispute queue | Gives the app a bounded operational workflow above the BLN dispute and resolve routes | BLN-backed handoff facade |
-| Map-backed operations workspace | Adds route, stop, or custody visualization only after the BLN facade is real; `Navigatr` is the current future SDK candidate for this surface | BLN-backed deliveries and handoff facade plus later ops slice |
+| Delivery timeline and diagnostics | Exposes remote lifecycle, handoff, and SMS transport events in one place | BLN-backed events and handoff facades |
+| Handoff inbox and outbox | Surfaces incoming verification work and outgoing custody transfers | Implemented BLN-backed handoff facade |
+| Dispute queue | Gives the app a bounded operational workflow above the BLN dispute and resolve routes | Implemented BLN-backed handoff facade |
+| Map-backed operations workspace | Adds route, stop, or custody visualization only after the BLN facade is real; `Navigatr` is the current future SDK candidate for this surface | Implemented BLN-backed deliveries and handoff facades plus later ops slice |
 | Stalled-work alerts | Reuses existing notifications, dashboard cards, and worker topology for operational awareness | BLN projections and jobs |

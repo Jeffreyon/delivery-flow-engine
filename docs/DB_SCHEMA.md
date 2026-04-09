@@ -16,6 +16,7 @@
 | `backend/migrations/0006_prune_non_delivery_child_events.sql` | Additive SQL | Removes non-delivery event types from the `delivery_events` child ledger after the parent-child split |
 | `backend/migrations/0007_create_orders_and_drivers.sql` | Additive SQL | Adds the first delivery business record and driver-profile tables |
 | `backend/migrations/0008_create_deliveries_and_assignments.sql` | Additive SQL | Adds lifecycle-bearing deliveries plus assignment history |
+| `backend/migrations/0009_create_tenant_owner_accounts.sql` | Additive SQL | Adds the durable BLN tenant integration, membership, and node-assignment tables for encrypted tenant API key storage |
 | `backend/scripts/migrate.js` | Executable migration runner | Creates `schema_migrations` and applies ordered SQL files |
 | `backend/scripts/initDb.js` | Bootstrap alias | Delegates to the migration runner |
 | `backend/scripts/seedLocal.js` | Idempotent local demo seed | Inserts roles, users, settings, notifications, devices, and sessions |
@@ -27,6 +28,9 @@
 |---|---|---|---|
 | `roles` | Role definitions | `id` PK, `permissions text[]` | Seeded with `admin`, `user` |
 | `users` | Identity, profile, and auth state | `id` PK, `email` UNIQUE, `roles text[]`, `password_hash` | Stores profile fields plus the first BLN binding under `preferences.bln` |
+| `bln_tenant_accounts` | Durable BLN tenant integration | `tenant_id` PK, `api_key_encrypted`, `api_key_last4`, `status` | Stores one encrypted BLN tenant API key per tenant integration |
+| `bln_tenant_memberships` | Durable local membership to a BLN tenant | `user_id`, `tenant_id`, `role`, `status` | Grants tenant-level read access for local users |
+| `bln_node_assignments` | Durable local act-as assignment to a BLN node | `user_id`, `tenant_id`, `node_id`, `is_default`, `status` | Grants node-level runtime access for secure BLN writes |
 | `notifications` | User notification feed | `id` PK, `to_uid` FK, `read` | Mark-read is now scoped by authenticated user id |
 | `events` | Parent event ledger | `id` PK, `type`, `payload jsonb`, `created_at` | Covers generic platform events and the parent rows for delivery events |
 | `delivery_events` | Delivery-event child ledger | `id` PK and FK to `events.id` | Public list and admin create exist, but lifecycle-owned producers are still missing |
@@ -41,6 +45,9 @@
 
 ## Relationships and constraints
 - Foreign keys:
+  - `bln_tenant_memberships.user_id -> users.id` (`ON DELETE CASCADE`)
+  - `bln_node_assignments.user_id -> users.id` (`ON DELETE CASCADE`)
+  - `bln_node_assignments.(user_id, tenant_id) -> bln_tenant_memberships.(user_id, tenant_id)` (`ON DELETE CASCADE`)
   - `notifications.to_uid -> users.id` (`ON DELETE CASCADE`)
   - `delivery_events.id -> events.id` (`ON DELETE CASCADE`)
   - `orders.created_by_uid -> users.id` (`ON DELETE SET NULL`)
@@ -53,8 +60,13 @@
   - `sessions.uid -> users.id` (`ON DELETE CASCADE`)
 - Unique constraints:
   - `users.email`
+  - `bln_tenant_accounts.tenant_id`
+  - `bln_tenant_memberships.(user_id, tenant_id)`
   - `orders.reference`
 - Secondary indexes:
+  - `bln_tenant_memberships_tenant_id_idx (tenant_id)`
+  - `bln_node_assignments_user_tenant_idx (user_id, tenant_id)`
+  - `bln_node_assignments_default_uniq (user_id, tenant_id) WHERE is_default = true`
   - `notifications_to_uid_created_at_idx (to_uid, created_at DESC)`
   - `orders_created_at_idx (created_at DESC)`
   - `drivers_is_available_idx (is_available)`
@@ -69,15 +81,19 @@
 - Timestamps are stored as `BIGINT` epoch milliseconds in runtime tables.
 - `0001_baseline.sql` is preserved as history; later SQL files carry the removal of legacy app-related schema.
 - Fresh environments should use the migration runner path, not manual reconstruction from one SQL file.
-- The first BLN bridge reuses `users.preferences` and stores a small `bln` object shaped as `{ tenantId, nodeId? }`; no dedicated local membership table exists yet.
+- The durable BLN tenant integration now lives in `bln_tenant_accounts`.
+- Local BLN membership now lives in `bln_tenant_memberships`.
+- Local BLN node assignment now lives in `bln_node_assignments`.
+- `users.preferences.bln` remains only as a compatibility mirror shaped as `{ tenantId, nodeId }`.
+- The encrypted tenant API key in `bln_tenant_accounts.api_key_encrypted` is the only persisted BLN credential in this repo.
 
 ## Current state, gap, recommended target
 | Current state | Gap | Recommended target |
 |---|---|---|
-| The repo has one migration-backed schema path for scaffold and delivery tables | Later delivery schema slices such as tracking and incidents are still not implemented | Keep using additive migrations as later delivery slices land |
+| The repo has one migration-backed schema path for scaffold, delivery, and BLN integration tables | Later delivery schema slices such as tracking and incidents are still not implemented | Keep using additive migrations as later delivery slices land |
 | Historical SQL still shows older fields before later removals | Future delivery work could be tempted to rewrite baseline files | Preserve `0001` to `0003` as history and add new files after them |
 | Seed scripts currently cover scaffold identities only | Later prompts could overstate delivery bootstrap readiness or confuse demo users with production access | Keep delivery seeds deferred, but use the dedicated bootstrap-admin path for the first real remote admin account |
-| The parent-child split between `events` and `delivery_events` is now the event baseline, and core delivery tables now exist in schema | No delivery runtime modules or handlers exist yet for the new tables, and the active next queue is now external BLN integration rather than more local delivery schema | Freeze new local delivery-table growth until the BLN client layer, context bridge, and any projection or augmentation role are explicit |
+| The parent-child split between `events` and `delivery_events` is now the event baseline, core delivery tables already exist, and the BLN bridge now stores tenant integrations, memberships, and node assignments locally | No delivery runtime modules or handlers exist yet for the dormant local delivery tables, and the active next queue is now UI or projection work on top of the BLN bridge | Freeze new local delivery-table growth until the app needs a real projection or augmentation role |
 
 ## Recommended first delivery schema set
 | Planned schema object | Why it belongs in the first envelope | Depends on | Slice 1 status |

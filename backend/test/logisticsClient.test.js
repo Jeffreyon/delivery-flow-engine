@@ -177,6 +177,51 @@ describe("logistics-api client foundation", () => {
     );
   });
 
+  test("uses a tenant API key to mint a node session", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue(
+      createMockResponse({
+        status: 201,
+        body: {
+          accessToken: "node-session-token",
+          tokenType: "Bearer",
+          tenant: { id: "tenant-1" },
+          node: { id: "node-1" },
+        },
+      })
+    );
+    const client = createLogisticsClient({
+      baseUrl: "https://logistics.example.com",
+      serviceSecret: "svc-secret",
+      fetchImpl,
+    });
+
+    const result = await client.createNodeSession({
+      apiKey: "tenant-api-key",
+      payload: {
+        nodeId: "node-1",
+        subject: "user-1",
+        email: "user@example.com",
+      },
+    });
+
+    expect(result).toEqual({
+      accessToken: "node-session-token",
+      tokenType: "Bearer",
+      tenant: { id: "tenant-1" },
+      node: { id: "node-1" },
+    });
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "https://logistics.example.com/api/node-auth/session",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer tenant-api-key",
+          "Content-Type": "application/json",
+        }),
+      })
+    );
+  });
+
   test("normalizes upstream HTTP errors", async () => {
     const fetchImpl = jest.fn().mockResolvedValue(
       createMockResponse({

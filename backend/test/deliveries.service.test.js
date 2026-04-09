@@ -66,6 +66,7 @@ describe("remote deliveries facade service", () => {
       },
       {
         tenantId: "tenant-1",
+        nodeId: null,
       }
     );
     expect(logisticsClient.createDelivery).toHaveBeenCalledWith({
@@ -112,6 +113,7 @@ describe("remote deliveries facade service", () => {
       },
       {
         tenantId: null,
+        nodeId: null,
       }
     );
     expect(logisticsClient.listDeliveries).toHaveBeenCalledWith({
@@ -159,6 +161,7 @@ describe("remote deliveries facade service", () => {
       },
       {
         tenantId: "tenant-2",
+        nodeId: null,
       }
     );
     expect(logisticsClient.getDelivery).toHaveBeenCalledWith({
