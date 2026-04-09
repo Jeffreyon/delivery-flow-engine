@@ -44,6 +44,15 @@
 | Devices | GET | `/api/devices` | Authenticated | `DeviceItem[]` |
 | Devices | POST | `/api/devices` | Authenticated | `DeviceItem` |
 | Sessions | GET | `/api/sessions` | Authenticated | `SessionItem[]` |
+| Network | POST | `/api/v1/network/bootstrap` | Admin | `{ tenant, node, binding, apiKey }` |
+| Network | GET | `/api/v1/network/context` | Authenticated | `{ actor, binding, effectiveContext, tenant, node, issues }` |
+| Network | GET | `/api/v1/network/nodes` | Authenticated | `{ tenantId, items }` |
+| Network | POST | `/api/v1/network/nodes` | Authenticated | `{ node }` |
+| Deliveries | POST | `/api/v1/deliveries` | Authenticated | `{ id, status }` |
+| Deliveries | GET | `/api/v1/deliveries` | Authenticated | `{ items, nextCursor }` |
+| Deliveries | GET | `/api/v1/deliveries/:id` | Authenticated | `RemoteDelivery` |
+| Delivery events | GET | `/api/v1/deliveries/:id/events` | Authenticated | `RemoteDeliveryEvent[]` |
+| Delivery events | POST | `/api/v1/deliveries/:id/events` | Authenticated | `{ success: true }` |
 
 ## Contract notes
 - `/api/auth/me` returns role documents in `roles`, not a `string[]` of role ids.
@@ -57,6 +66,13 @@
 - `POST /api/delivery-events` now requires admin auth.
 - `POST /api/delivery-events` rejects non-delivery type namespaces such as `user.*` or `auth.*`.
 - When `SESSION_COOKIE_SECURE=true`, auth cookies are issued with `SameSite=None` so the Railway frontend can use credentialed cross-origin requests; local insecure cookie flows stay `SameSite=Lax`.
+- `/api/v1/network/bootstrap` binds the bootstrapped tenant and first node to one local user immediately; `bindUserId` defaults to the current admin.
+- `/api/v1/network/context` returns `200` with `issues` when the stored BLN binding is missing or stale, instead of converting that local state gap into a hard 4xx.
+- `/api/v1/network/nodes` never exposes BLN API keys or exchanged tenant tokens to the frontend.
+- `/api/v1/network/nodes` uses the current local BLN binding for non-admin callers; admin callers may override the target tenant with `tenantId` or fall back to their own stored binding.
+- `/api/v1/deliveries*` routes always resolve BLN tenant access through the local backend first.
+- Because the sibling BLN delivery routes are tenant-scoped, admin callers must still resolve a target tenant through `tenantId` or a stored BLN binding.
+- `POST /api/v1/deliveries` and `POST /api/v1/deliveries/:id/events` pass `Idempotency-Key` through when the header is present.
 
 ## Current state, gap, recommended target
 | Current state | Gap | Recommended target |
@@ -65,6 +81,8 @@
 | `PUT /api/users/:id` stays shared by self and admin | Separate self and admin endpoints do not exist | Keep actor-scoped field validation until a real consumer needs dedicated routes |
 | `notifications/mark-read` is now ownership-scoped | Response remains minimal | Expand the response only when a real consumer needs counts or detail |
 | `POST /api/events` and `POST /api/delivery-events` are admin-only | Signed or internal-only ingestion is not modeled yet, and delivery-specific producers are not wired yet | Keep the write boundaries narrow until a dedicated ingestion flow exists |
+| `/api/v1/network/*` now exists as the first BLN-backed local route family | Remote delivery and handoff facade routes still do not exist | Extend the same backend-owned bridge pattern to deliveries and handoffs before adding frontend flows |
+| `/api/v1/deliveries*` now exists as the first BLN-backed delivery facade | Handoff and custody routes still are not exposed through the local app | Add custody routes on the same facade pattern instead of bypassing it from the frontend |
 
 ## Implemented backend-only BLN client foundation
 This section is implemented runtime truth, but it is not an HTTP route surface yet.
@@ -93,8 +111,76 @@ This section is implemented runtime truth, but it is not an HTTP route surface y
 - Idempotency behavior:
   - passes `Idempotency-Key` through on wrapped write methods when the caller provides one
 
+## Implemented `/api/v1/network` bridge
+- Location:
+  - `backend/src/app/network/network.controller.js`
+  - `backend/src/app/network/network.service.js`
+- Local auth rule:
+  - all `/api/v1/network/*` routes require existing local auth
+  - bootstrap remains admin-only
+- First local BLN binding rule:
+  - the first bridge lives in `users.preferences.bln`
+  - stored shape is `{ tenantId, nodeId? }`
+  - the backend never stores exchanged tenant access tokens in Postgres
+- `POST /api/v1/network/bootstrap`
+  - request body:
+    - `name`
+    - `firstNode.phoneNumber`
+    - optional `firstNode.trustScore`
+    - optional `bindUserId`
+  - current behavior:
+    - wraps sibling `logistics-api` tenant bootstrap
+    - binds the resulting tenant and node to the target local user
+    - returns only safe API key metadata: `last4` and `createdAt`
+    - discards the plaintext upstream API key instead of returning it to the frontend
+- `GET /api/v1/network/context`
+  - current response shape:
+    - `actor`
+    - `binding`
+    - `effectiveContext`
+    - `tenant`
+    - `node`
+    - `issues`
+  - admin callers may override the inspected tenant or node through query params
+  - non-admin callers stay limited to their stored BLN binding
+- `GET /api/v1/network/nodes`
+  - non-admin callers list nodes through an exchanged tenant token
+  - admin callers use service-backed access and must resolve a target tenant through query or stored binding
+- `POST /api/v1/network/nodes`
+  - non-admin callers create nodes only inside their bound BLN tenant
+  - admin callers create nodes inside an explicit or bound tenant without exposing BLN credentials to the browser
+
+## Implemented `/api/v1/deliveries` facade
+- Location:
+  - `backend/src/app/deliveries/deliveries.controller.js`
+  - `backend/src/app/deliveries/deliveries.service.js`
+- Local auth rule:
+  - all `/api/v1/deliveries*` routes require existing local auth
+- Tenant-resolution rule:
+  - all delivery and event routes resolve a BLN tenant through the network bridge first
+  - non-admin callers use their stored BLN binding only
+  - admin callers may pass `tenantId` in query or body, or fall back to their stored BLN binding
+- `POST /api/v1/deliveries`
+  - forwards the upstream delivery-create payload
+  - accepts optional local `tenantId` for admin targeting
+  - forwards `Idempotency-Key` to the sibling BLN backend
+- `GET /api/v1/deliveries`
+  - forwards the upstream delivery-list query
+  - accepts optional local `tenantId` for admin targeting
+  - returns the upstream `{ items, nextCursor }` shape
+- `GET /api/v1/deliveries/:id`
+  - reads one BLN delivery detail through the local backend
+  - accepts optional local `tenantId` query for admin targeting
+- `GET /api/v1/deliveries/:id/events`
+  - returns the upstream delivery event timeline array
+  - accepts optional local `tenantId` query for admin targeting
+- `POST /api/v1/deliveries/:id/events`
+  - injects `deliveryId` from the route path instead of trusting frontend callers to provide it
+  - accepts optional local `tenantId` in the body for admin targeting
+  - forwards `Idempotency-Key` to the sibling BLN backend
+
 ## Planned BLN integration contract baseline
-This section is the recommended target for the next active queue. It is not implemented runtime truth yet.
+This section is the recommended target for the remaining active queue. It is not implemented runtime truth yet.
 
 ### Versioning rule
 - Existing scaffold routes stay under unversioned `/api/*`.
@@ -113,15 +199,6 @@ This section is the recommended target for the next active queue. It is not impl
 ### First-cut planned routes
 | Area | Method | Path | Planned actor access | Slice target | Notes |
 |---|---|---|---|---|---|
-| Network | POST | `/api/v1/network/bootstrap` | `admin` | 13 | Wraps BLN tenant-plus-first-node bootstrap through the local backend |
-| Network | GET | `/api/v1/network/context` | `admin` or authenticated user with BLN binding | 13 | Returns the resolved BLN tenant or node context for the current app actor |
-| Network | GET | `/api/v1/network/nodes` | `admin` or authenticated user with BLN binding | 13 | Lists nodes inside the resolved BLN context |
-| Network | POST | `/api/v1/network/nodes` | `admin` or authenticated user with BLN binding | 13 | Creates a node through the local backend without exposing BLN credentials to the frontend |
-| Deliveries | POST | `/api/v1/deliveries` | `admin` or authenticated user with BLN binding | 14 | Local facade over BLN delivery creation |
-| Deliveries | GET | `/api/v1/deliveries` | `admin` or authenticated user with BLN binding | 14 | Local facade over BLN delivery listing |
-| Deliveries | GET | `/api/v1/deliveries/:id` | `admin` or authenticated user with BLN binding | 14 | Local facade over BLN delivery detail |
-| Delivery events | GET | `/api/v1/deliveries/:id/events` | `admin` or authenticated user with BLN binding | 14 | Reads the remote delivery timeline through the local backend |
-| Delivery events | POST | `/api/v1/deliveries/:id/events` | `admin` or authenticated user with BLN binding | 14 | Appends delivery lifecycle events through the local backend |
 | Handoffs | GET | `/api/v1/deliveries/:id/handoff-status` | `admin` or authenticated user with BLN binding | 15 | Local facade over BLN custody status |
 | Handoffs | GET | `/api/v1/handoffs` | `admin` or authenticated user with BLN binding | 15 | Reads handoff history for one delivery through the local backend |
 | Handoffs | GET | `/api/v1/handoffs/:id` | `admin` or authenticated user with BLN binding | 15 | Reads one remote handoff through the local backend |

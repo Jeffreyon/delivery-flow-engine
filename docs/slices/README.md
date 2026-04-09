@@ -10,7 +10,7 @@
 - The async platform bootstrap now exists: BullMQ and `ioredis` are installed, shared queue config exists, `backend/worker.js` is wired for a separate worker service, and the live Railway project now includes `Redis` plus `worker`.
 - The local schema now includes `orders`, `drivers`, `deliveries`, and `assignments`, but that local-first runtime track is no longer the active queue.
 - The sibling `logistics-api` repo now exposes the live BLN surface for tenant bootstrap, token exchange, nodes, deliveries, events, and handoffs.
-- A backend-only BLN client foundation now exists, but no BLN-backed app routes, local BLN context bridge, or custody UI exist yet in this repo.
+- A backend-only BLN client foundation plus the first `/api/v1/network` bridge and `/api/v1/deliveries` facade now exist, but no custody UI exists yet in this repo.
 
 ## How to use
 1. Read `AGENTS.md`, `IMPLEMENT.md`, `docs/IMPLEMENTATION_PLAN.md`, and the active pack.
@@ -44,8 +44,8 @@
 |---|---|---|---|---|---|---|
 | 11 | `docs/slices/11-bln-integration-contract.md` | docs-only -> backend | 11 | No | Implemented | current baseline |
 | 12 | `docs/slices/12-logistics-client-foundation.md` | backend | 12 | No | Implemented | 11 |
-| 13 | `docs/slices/13-tenant-context-and-node-bridge.md` | backend | 13 | No | Planned | 11, 12 |
-| 14 | `docs/slices/14-remote-deliveries-and-events-facade.md` | backend | 14 | No | Planned | 12, 13 |
+| 13 | `docs/slices/13-tenant-context-and-node-bridge.md` | backend | 13 | No | Implemented | 11, 12 |
+| 14 | `docs/slices/14-remote-deliveries-and-events-facade.md` | backend | 14 | No | Implemented | 12, 13 |
 | 15 | `docs/slices/15-handoffs-and-custody-workspace.md` | backend or full-stack | 15 | No | Planned | 12, 13, 14 |
 | 16 | `docs/slices/16-projections-jobs-and-ops-surface.md` | full-stack | 16 | Maybe | Planned | 01, 14, 15 |
 

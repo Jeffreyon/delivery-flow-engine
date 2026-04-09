@@ -23,10 +23,10 @@
 ## Active BLN integration primitives
 | Primitive | Role | Current state | Notes |
 |---|---|---|---|
-| BLNTenantContext | Local binding between an authenticated app actor and a BLN tenant | Missing | Required before non-admin BLN-backed routes can be safe and useful |
-| BLNNodeContext | Local or session-level binding to the acting BLN node | Missing | Needed for custody and handoff actions that depend on current or receiving node identity |
-| RemoteDelivery | Delivery record owned by the sibling `logistics-api` | Missing integration | This is the active delivery source of truth for the next execution queue |
-| RemoteDeliveryEvent | Immutable delivery lifecycle or handoff event owned by `logistics-api` | Missing integration | Powers delivery timeline, transport diagnostics, and custody history |
+| BLNTenantContext | Local binding between an authenticated app actor and a BLN tenant | Implemented first bridge | Stored in `users.preferences.bln.tenantId`; bootstrap binds immediately and the backend exchanges tenant access on demand |
+| BLNNodeContext | Local or session-level binding to the acting BLN node | Implemented first bridge | Stored in `users.preferences.bln.nodeId` when known; used for context inspection and later custody actions |
+| RemoteDelivery | Delivery record owned by the sibling `logistics-api` | Implemented backend facade | Exposed locally through `/api/v1/deliveries` and remains the active delivery source of truth |
+| RemoteDeliveryEvent | Immutable delivery lifecycle or handoff event owned by `logistics-api` | Implemented backend facade | Exposed locally through `/api/v1/deliveries/:id/events` for timeline and lifecycle append flows |
 | RemoteHandoff | Custody-transfer record owned by `logistics-api` | Missing integration | Covers initiate, retry, verify, dispute, resolve, audit, and status flows |
 | ProjectionCache | Optional local summary or read model built from BLN data | Deferred | Use only after the client layer and remote facade are real |
 
@@ -43,30 +43,33 @@
 ## BLN integration gap for the next execution queue
 | PRD concept | Current state | Gap | Recommended target |
 |---|---|---|---|
-| Delivery Client Layer | Missing | No backend abstraction wraps the sibling BLN API yet | Add the client layer first so later app routes do not talk to `logistics-api` ad hoc |
-| Remote delivery access | Missing | No route or service in this repo can list, create, or read BLN deliveries yet | Build a local facade on top of the external delivery and event endpoints |
+| Delivery Client Layer | Implemented | Backend-only client wraps the sibling BLN API | Keep later route families on the same seam instead of adding ad hoc fetch calls |
+| Remote delivery access | Implemented backend facade | The app still has no frontend delivery workspace yet | Build the first operator-visible delivery views on top of the local facade instead of bypassing it |
 | Remote handoff access | Missing | No route or UI in this repo exposes BLN handoff, custody, or dispute flows | Build handoff and custody features as the first distinctive app behaviors on top of the BLN API |
-| Local tenant or node binding | Missing | The current auth model has no concept of BLN tenant or node context | Add a local bridge before broad non-admin BLN access |
+| Local tenant or node binding | Implemented first bridge | The current auth model now stores one BLN context and powers delivery routes, but it still stops before custody routes | Reuse the existing bridge before broadening the local data model |
 | Local delivery schema | Partial | Local delivery tables exist, but they would duplicate the active external source of truth if promoted now | Keep them dormant until the app needs a real local projection or augmentation layer |
 
 ## Recommended first BLN-backed feature envelope
 | Entity or surface | Why it belongs in the next queue | Relationship to the scaffold | Current status |
 |---|---|---|---|
-| BLN client layer | Makes the PRD's external-API architecture real | New backend-only abstraction on top of current auth and request handlers | Missing |
-| BLN tenant or node context | Makes authenticated app sessions usable against tenant-scoped BLN routes | Extends current users and auth without exposing BLN credentials to the frontend | Missing |
-| Remote deliveries | Makes the app useful without duplicating delivery ownership locally | Reuses current admin and dashboard shells as consumer surfaces | Missing |
-| Remote delivery events | Delivers the timeline and transport diagnostics promised by the PRD | Extends the existing event-oriented UI and notification ideas with external data | Missing |
+| BLN client layer | Makes the PRD's external-API architecture real | New backend-only abstraction on top of current auth and request handlers | Implemented |
+| BLN tenant or node context | Makes authenticated app sessions usable against tenant-scoped BLN routes | Extends current users and auth without exposing BLN credentials to the frontend | Implemented first bridge |
+| Remote deliveries | Makes the app useful without duplicating delivery ownership locally | Reuses current admin and dashboard shells as consumer surfaces | Implemented backend facade |
+| Remote delivery events | Delivers the timeline and transport diagnostics promised by the PRD | Extends the existing event-oriented UI and notification ideas with external data | Implemented backend facade |
 | Remote handoffs | Exposes the real custody-transfer differentiator already implemented in `logistics-api` | Gives this repo a distinctive operator feature beyond simple CRUD | Missing |
 | Projection cache | Supports future dashboards, summaries, and alerts | Reuses the current Postgres and BullMQ baseline if the app later needs local denormalized reads | Deferred |
 
 ## Locked integration decisions
 - The sibling `logistics-api` repo is the active delivery, event, node, and handoff source of truth for the next slice queue.
 - Delivery Flow Engine should add a backend-owned client layer before it adds BLN-backed routes or UI.
+- The first local BLN binding lives in `users.preferences.bln` and stores ids only.
+- Exchanged BLN tenant tokens stay ephemeral and backend-only.
+- The first local remote-delivery facade lives under `/api/v1/deliveries` and stays upstream-shaped by default.
 - The dormant local delivery schema should not be treated as the active next runtime path while the BLN integration layer is still missing.
 - `events` and `delivery_events` in this repo remain local platform scaffolding until a later projection or synchronization slice gives them a new role.
 
 ## Planning guardrails
 - Keep `users`, `roles`, `sessions`, `devices`, `settings`, current `notifications`, the generic `events` ledger, and the child `delivery_events` ledger as scaffold foundations until broader delivery modules land.
-- Do not describe BLN client, tenant or node binding, remote deliveries, remote delivery events, or remote handoffs as implemented until the integration slices land.
+- Do not describe remote deliveries, remote delivery events, or remote handoffs as implemented until those integration slices land.
 - Do not describe the dormant local `orders`, `deliveries`, `drivers`, `assignments`, `location_pings`, or `incidents` path as the active execution queue while `logistics-api` is the source of truth.
 - Do not treat the current `delivery_events` child ledger as complete delivery lifecycle proof before delivery producers and rules actually land.

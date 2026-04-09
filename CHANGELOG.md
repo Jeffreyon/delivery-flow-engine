@@ -9,7 +9,10 @@ This file records material changes to how the template should be understood or u
 - Updated the planning chain to make `logistics-api` the active external delivery, event, node, and handoff source of truth for the next slices, while keeping the local `orders`, `drivers`, `deliveries`, and `assignments` schema explicit as dormant extension or projection candidates.
 - Rebuilt the active slice-pack queue around BLN contract alignment, logistics client foundation, tenant-context bridging, BLN-backed deliveries and events, handoff and custody workflows, and later projections or operator surfaces.
 - Added the backend-only logistics client foundation plus env contract for the sibling `logistics-api`, with focused backend coverage for service-auth requests, tenant-auth requests, idempotency-header pass-through, query building, and upstream error normalization.
+- Added the first local BLN tenant-context and node bridge under `/api/v1/network`, storing the initial binding in `users.preferences.bln`, redacting upstream BLN API keys from frontend responses, and exchanging tenant access tokens only at request time.
+- Added the first local BLN-backed delivery facade under `/api/v1/deliveries`, including remote delivery create, list, detail, timeline read, and lifecycle-event append routes with `Idempotency-Key` pass-through on writes.
 - Added explicit BLN-backed feature opportunities in the docs so later work can focus on onboarding, custody workflows, diagnostics, and notifications on top of the existing BLN API rather than duplicating core logistics storage first.
+- Marked `Navigatr` as a future map SDK candidate for later operator surfaces only, keeping it out of the current slice queue until the BLN facade and dashboard flows are real.
 - Updated migration and prompt-routing guidance so future agents do not add more local delivery schema or contract surface by reflex when the next active gap is still the external BLN integration layer.
 
 ## 2026-04-03

@@ -4,7 +4,7 @@
 - Run order: `14`
 - Depends on: Slices 12 and 13
 - Migration need: `No`
-- Status: `Planned`
+- Status: `Implemented`
 
 ## PRD coverage
 - create delivery
@@ -15,9 +15,9 @@
 ## Current state, gap, recommended target
 | Current state | Gap | Recommended target |
 |---|---|---|
-| The app has no BLN-backed delivery routes yet | The frontend has no useful delivery surface to call | Add the first local delivery and event facade routes |
-| The sibling BLN backend already supports create, list, get, append-event, and event-history flows | This repo still points operators at scaffold-only pages | Reuse that existing external contract instead of rebuilding local delivery ownership first |
-| Local delivery tables exist but have no runtime handlers | They could distract from the remote facade work | Keep local tables dormant while the facade lands |
+| The app now exposes BLN-backed delivery create, list, detail, and event routes | Handoff and custody routes still are not exposed locally | Reuse the same facade pattern for the custody slice instead of bypassing the local backend |
+| The sibling BLN backend already supports create, list, get, append-event, and event-history flows | This repo still has no operator UI on top of those remote routes | Build the first delivery workspace and timeline UI on the existing facade instead of rebuilding local delivery ownership first |
+| Local delivery tables exist but have no runtime handlers | They could still distract from the remote facade work | Keep local tables dormant while the handoff and UI slices land |
 
 ## Scope
 - Implement local `/api/v1/deliveries` create, list, and detail routes backed by the logistics client.
@@ -59,6 +59,16 @@
 ## PR follow-through
 - Prepare `docs/PR_TEMPLATE.md` when publishing is in scope.
 - Include upstream BLN assumptions, validation evidence, and any deferrals around caching or UI work.
+
+## Delivered
+- Added `POST /api/v1/deliveries`.
+- Added `GET /api/v1/deliveries`.
+- Added `GET /api/v1/deliveries/:id`.
+- Added `GET /api/v1/deliveries/:id/events`.
+- Added `POST /api/v1/deliveries/:id/events`.
+- Reused the network bridge so all delivery and event routes resolve tenant-scoped BLN access through the local backend.
+- Forwarded `Idempotency-Key` for delivery create and delivery-event append routes.
+- Added focused backend service and controller coverage for the facade.
 
 ## Exit criteria
 - The local backend exposes BLN-backed delivery create, list, detail, and event routes.

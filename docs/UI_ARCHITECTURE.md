@@ -82,4 +82,5 @@ This section is a recommended target, not current runtime truth.
 | Delivery timeline and diagnostics | Exposes remote lifecycle, handoff, and SMS transport events in one place | BLN-backed events facade |
 | Handoff inbox and outbox | Surfaces incoming verification work and outgoing custody transfers | BLN-backed handoff facade |
 | Dispute queue | Gives the app a bounded operational workflow above the BLN dispute and resolve routes | BLN-backed handoff facade |
+| Map-backed operations workspace | Adds route, stop, or custody visualization only after the BLN facade is real; `Navigatr` is the current future SDK candidate for this surface | BLN-backed deliveries and handoff facade plus later ops slice |
 | Stalled-work alerts | Reuses existing notifications, dashboard cards, and worker topology for operational awareness | BLN projections and jobs |
