@@ -91,6 +91,12 @@ app.get(
 
 app.use("/api/users", rateLimiter, require("./app/users/users.controller"));
 app.use("/api/auth", require("./app/auth/auth.controller"));
+app.use("/api/v1/network", rateLimiter, require("./app/network/network.controller"));
+app.use(
+  "/api/v1/deliveries",
+  rateLimiter,
+  require("./app/deliveries/deliveries.controller")
+);
 app.use(
   "/api/notifications",
   rateLimiter,
@@ -109,7 +115,7 @@ app.use("/api/sessions", rateLimiter, require("./app/sessions/sessions.controlle
 
 app.use("/", (req, res) => {
   res.send(
-    "Backend API is up. Postgres-backed routes are available under /api/* (users, notifications, events, delivery-events, roles, settings, devices, sessions)."
+    "Backend API is up. Postgres-backed routes are available under /api/*, /api/v1/network, and /api/v1/deliveries."
   );
 });
 

@@ -26,7 +26,7 @@
 | Table | Purpose | Key columns | Notes |
 |---|---|---|---|
 | `roles` | Role definitions | `id` PK, `permissions text[]` | Seeded with `admin`, `user` |
-| `users` | Identity, profile, and auth state | `id` PK, `email` UNIQUE, `roles text[]`, `password_hash` | Stores preferences and profile fields |
+| `users` | Identity, profile, and auth state | `id` PK, `email` UNIQUE, `roles text[]`, `password_hash` | Stores profile fields plus the first BLN binding under `preferences.bln` |
 | `notifications` | User notification feed | `id` PK, `to_uid` FK, `read` | Mark-read is now scoped by authenticated user id |
 | `events` | Parent event ledger | `id` PK, `type`, `payload jsonb`, `created_at` | Covers generic platform events and the parent rows for delivery events |
 | `delivery_events` | Delivery-event child ledger | `id` PK and FK to `events.id` | Public list and admin create exist, but lifecycle-owned producers are still missing |
@@ -69,6 +69,7 @@
 - Timestamps are stored as `BIGINT` epoch milliseconds in runtime tables.
 - `0001_baseline.sql` is preserved as history; later SQL files carry the removal of legacy app-related schema.
 - Fresh environments should use the migration runner path, not manual reconstruction from one SQL file.
+- The first BLN bridge reuses `users.preferences` and stores a small `bln` object shaped as `{ tenantId, nodeId? }`; no dedicated local membership table exists yet.
 
 ## Current state, gap, recommended target
 | Current state | Gap | Recommended target |
@@ -76,7 +77,7 @@
 | The repo has one migration-backed schema path for scaffold and delivery tables | Later delivery schema slices such as tracking and incidents are still not implemented | Keep using additive migrations as later delivery slices land |
 | Historical SQL still shows older fields before later removals | Future delivery work could be tempted to rewrite baseline files | Preserve `0001` to `0003` as history and add new files after them |
 | Seed scripts currently cover scaffold identities only | Later prompts could overstate delivery bootstrap readiness or confuse demo users with production access | Keep delivery seeds deferred, but use the dedicated bootstrap-admin path for the first real remote admin account |
-| The parent-child split between `events` and `delivery_events` is now the event baseline, and core delivery tables now exist in schema | No delivery runtime modules or handlers exist yet for the new tables, and the active next queue is now external BLN integration rather than more local delivery schema | Freeze new local delivery-table growth until the BLN client layer and any projection or augmentation role are explicit |
+| The parent-child split between `events` and `delivery_events` is now the event baseline, and core delivery tables now exist in schema | No delivery runtime modules or handlers exist yet for the new tables, and the active next queue is now external BLN integration rather than more local delivery schema | Freeze new local delivery-table growth until the BLN client layer, context bridge, and any projection or augmentation role are explicit |
 
 ## Recommended first delivery schema set
 | Planned schema object | Why it belongs in the first envelope | Depends on | Slice 1 status |

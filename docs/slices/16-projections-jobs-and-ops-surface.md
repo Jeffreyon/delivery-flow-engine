@@ -22,6 +22,7 @@
 - Decide whether the app needs local projection storage, scheduled refresh jobs, or both.
 - If justified, add the first bounded queue jobs for BLN summary refresh, stalled-handoff detection, or notification fanout.
 - Add the first operator dashboard or overview surfaces on top of BLN-backed data.
+- If map-backed operator surfaces are approved later, treat `Navigatr` as the current future SDK candidate for route or custody visualization instead of introducing a generic map dependency earlier in the queue.
 - Document what remains stateless versus what now persists locally.
 
 ## Out of scope
@@ -69,3 +70,4 @@
 - long-term analytics
 - cross-tenant benchmarking
 - customer-facing notifications
+- map-backed operator visualization through `Navigatr` until the BLN facade and operator surface are both real

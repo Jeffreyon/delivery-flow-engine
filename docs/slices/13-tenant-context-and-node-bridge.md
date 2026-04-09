@@ -4,7 +4,7 @@
 - Run order: `13`
 - Depends on: Slices 11 and 12
 - Migration need: `No`
-- Status: `Planned`
+- Status: `Implemented`
 
 ## PRD coverage
 - backend-owned auth bridge into the external delivery network
@@ -14,9 +14,9 @@
 ## Current state, gap, recommended target
 | Current state | Gap | Recommended target |
 |---|---|---|
-| Local auth exists, but no BLN tenant or node context exists | The app cannot safely use tenant-scoped BLN routes | Add a local context bridge before broad BLN-backed delivery access |
-| The sibling BLN backend now supports tenant bootstrap, node create or read, and service-backed token exchange | This repo exposes none of that behind local auth | Add the first local network-context routes and bridge behavior |
-| No dedicated local mapping table exists yet | The app could over-design persistence before it proves the first bridge | Start with the smallest safe local context decision and defer heavier schema until it is justified |
+| Local auth, the BLN client, and the first `/api/v1/network/*` routes now exist | BLN-backed deliveries and handoffs still are not exposed through the local backend | Reuse the current bridge for the next facade slices instead of widening auth again |
+| The sibling BLN backend supports tenant bootstrap, node create or read, and service-backed token exchange | The bridge still stops at context and nodes | Build remote deliveries and custody on top of the current bridge |
+| No dedicated local mapping table exists yet | Future slices could over-design membership state before it is justified | Keep the first binding in `users.preferences.bln` until multi-tenant switching or richer membership needs are real |
 
 ## Scope
 - Implement the first local network-context routes above the logistics client.
@@ -58,6 +58,14 @@
 ## PR follow-through
 - Prepare `docs/PR_TEMPLATE.md` when publishing is in scope.
 - Include the local context decision, bootstrap flow, and validation evidence.
+
+## Delivered
+- Added `POST /api/v1/network/bootstrap` behind local admin auth.
+- Added `GET /api/v1/network/context` behind local auth with stale-binding issue reporting.
+- Added `GET /api/v1/network/nodes` and `POST /api/v1/network/nodes` behind local auth.
+- Bound the first BLN tenant and node context in `users.preferences.bln`.
+- Kept exchanged tenant access tokens backend-only and ephemeral.
+- Added focused backend service and controller coverage for the bridge.
 
 ## Exit criteria
 - The app can resolve a safe local BLN context through the backend.
