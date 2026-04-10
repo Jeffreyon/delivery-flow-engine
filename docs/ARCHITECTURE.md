@@ -23,7 +23,7 @@ Current note:
 | Planned module | Local route prefix | External dependency | Notes |
 |---|---|---|---|
 | logistics client | backend-only | sibling `logistics-api` | Implemented foundation; wraps tenant bootstrap, support-only tenant exchange, node-session exchange, nodes, deliveries, events, and handoffs |
-| network context | `/api/v1/network` | `logistics-api` tenant bootstrap, node-session exchange, and nodes | Resolves the local user or admin session into a membership-scoped BLN tenant and node context, exposes admin-side tenant-member, invitation, and node-assignment management, and now includes explicit workspace-bootstrap onboarding plus invitation-based tenant join outside generic signup |
+| network context | `/api/v1/network` | `logistics-api` tenant bootstrap, node claim, node-session exchange, and nodes | Resolves the local user or admin session into the one configured workspace tenant, auto-provisions local membership, exposes self OTP node activation, and keeps admin-side node and membership management as bounded support flows |
 | deliveries facade | `/api/v1/deliveries` | `logistics-api` deliveries and events | Local backend composes remote delivery state for the frontend |
 | handoffs facade | `/api/v1/handoffs` and `/api/v1/deliveries/:id/handoff-status` | `logistics-api` handoffs | Implemented; exposes custody-transfer workflows without leaking BLN secrets to the frontend |
 | projections and jobs | local queue plus optional local DB | `logistics-api` reads, events, and health checks | Deferred until the remote facade exists and the app needs cached summaries or alerts |
@@ -42,7 +42,7 @@ Current note:
 |---|---|---|
 | auth | `/api/auth` | mixed public and authenticated routes |
 | users | `/api/users` | authenticated; admin for list, self or admin for read and update |
-| network | `/api/v1/network` | authenticated; admin-only bootstrap, invitations, tenant-member management, and support node routes plus actor-scoped context and node bridge routes |
+| network | `/api/v1/network` | authenticated; admin-only workspace bootstrap, invitations, tenant-member management, and support node routes plus actor-scoped context and self node-OTP bridge routes |
 | deliveries | `/api/v1/deliveries` | authenticated; actor-scoped BLN delivery and event facade routes |
 | handoffs | `/api/v1/handoffs` and `/api/v1/deliveries/:id/handoff-status` | authenticated; actor-scoped BLN custody facade routes, plus admin-only local dispute resolution |
 | roles | `/api/roles` | admin-only |
@@ -88,9 +88,10 @@ Current note:
 - `LOGISTICS_API_SERVICE_SECRET` is the delivery app's copy of the sibling `logistics-api` `DELIVERY_BACKEND_SERVICE_SECRET`; it is trusted backend-to-backend auth only and does not replace tenant API keys or node-bound runtime auth.
 - The signup and onboarding split is now explicit:
   - `POST /api/auth/signup` creates the local user only
-  - explicit client onboarding uses `POST /api/v1/network/workspaces/bootstrap`
-  - invited users may stay unprovisioned until an existing tenant assigns membership and node access
-  - invitation acceptance uses authenticated `POST /api/v1/network/invitations/:invitationId/accept`
+  - the first admin bootstraps the app instance workspace through `POST /api/v1/network/workspaces/bootstrap`
+  - when the workspace exists, signed-in users automatically resolve local membership in that one tenant
+  - users activate their BLN node through authenticated `POST /api/v1/network/nodes/self/request-otp` and `POST /api/v1/network/nodes/self/verify-otp`
+  - invitation routes remain available as dormant support paths instead of the primary onboarding model
   - `POST /api/v1/network/provision-self` remains only as a compatibility alias while callers migrate
 
 ## Frontend composition model
@@ -135,7 +136,7 @@ Current note:
 | Current state | Gap | Recommended target |
 |---|---|---|
 | Generic workspace runtime is implemented | Older docs described broader or different surfaces | Keep architecture docs centered on auth, dashboards, notifications, settings, and admin operations |
-| The repo now has local delivery schema plus a live sibling BLN backend to consume | The BLN-backed bridge now reaches network context, workspace bootstrap, invitation join, deliveries, events, and handoffs through membership-scoped node sessions, but operator-facing delivery or custody UI and admin invitation screens still do not exist | Build UI and later projections on top of the existing backend-owned bridge instead of widening local delivery ownership |
+| The repo now has local delivery schema plus a live sibling BLN backend to consume | The BLN-backed bridge now reaches network context, workspace bootstrap, self node OTP activation, deliveries, events, and handoffs through membership-scoped node sessions, and the frontend now has a first stateless operator workspace on top of that bridge | Keep the UI stateless for now and add projections or jobs only when refresh cost or alerting needs justify them |
 | The migration runner is present and `db:init` delegates to it | Production bootstrap can otherwise be mistaken for demo seeding | Keep architecture docs anchored to the migration runner, the bootstrap-admin seed contract, and the current Railway workflow |
 | The frontend now fails closed when `VITE_API_URL` is missing and Railway boot writes runtime config from the `frontend` service env | Older static builds could silently post `/api/*` requests back to the frontend origin when `VITE_API_URL` was absent at build time | Keep runtime API-base injection explicit so one frontend image can target the matching backend domain per Railway environment |
 | Route handlers still return mostly raw JSON payloads | The API is not yet uniformly shaped | Harden deliberately instead of documenting an idealized contract |

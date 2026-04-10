@@ -45,8 +45,10 @@
 | Devices | POST | `/api/devices` | Authenticated | `DeviceItem` |
 | Sessions | GET | `/api/sessions` | Authenticated | `SessionItem[]` |
 | Network | POST | `/api/v1/network/bootstrap` | Admin | `{ tenant, node, binding, apiKey }` |
-| Network | POST | `/api/v1/network/workspaces/bootstrap` | Authenticated | `{ tenant, node, binding, membership, assignment, apiKey }` |
-| Network | POST | `/api/v1/network/provision-self` | Authenticated | `{ tenant, node, binding, membership, assignment, apiKey }` |
+| Network | POST | `/api/v1/network/workspaces/bootstrap` | Admin | `{ tenant, node, binding, membership, assignment, apiKey }` |
+| Network | POST | `/api/v1/network/provision-self` | Admin | `{ tenant, node, binding, membership, assignment, apiKey }` |
+| Network | POST | `/api/v1/network/nodes/self/request-otp` | Authenticated | `{ tenantId, membership, phoneNumber, challengeId, expiresAt, provider, debugPin? }` |
+| Network | POST | `/api/v1/network/nodes/self/verify-otp` | Authenticated | `{ tenant, node, expiresAt, membership, assignment }` |
 | Network | GET | `/api/v1/network/context` | Authenticated | `{ actor, binding, memberships, assignments, effectiveContext, tenant, node, issues }` |
 | Network | GET | `/api/v1/network/invitations` | Authenticated | `{ scope, tenantId?, items }` |
 | Network | POST | `/api/v1/network/invitations` | Admin | `{ invitation }` |
@@ -84,13 +86,15 @@
 - When `SESSION_COOKIE_SECURE=true`, auth cookies are issued with `SameSite=None` so the Railway frontend can use credentialed cross-origin requests; local insecure cookie flows stay `SameSite=Lax`.
 - `/api/v1/network/bootstrap` binds the bootstrapped tenant and first node to one local user immediately; `bindUserId` defaults to the current admin.
 - `/api/v1/network/bootstrap` stores the returned tenant API key only in encrypted backend storage and returns only safe metadata to the frontend.
-- Current target rule:
+- Current workspace rule:
   - `POST /api/auth/signup` creates only the local user account.
-  - Explicit workspace creation now lives at `POST /api/v1/network/workspaces/bootstrap`.
-  - `POST /api/v1/network/provision-self` is retained only as a compatibility alias during the transition.
+  - The first admin bootstraps the one workspace tenant for the app instance at `POST /api/v1/network/workspaces/bootstrap`.
+  - `POST /api/v1/network/provision-self` is retained only as a compatibility alias during the transition and stays admin-only.
+  - When a workspace exists, authenticated users automatically resolve local membership in that workspace and must complete node activation through `POST /api/v1/network/nodes/self/request-otp` plus `POST /api/v1/network/nodes/self/verify-otp`.
 - `/api/v1/network/invitations` is dual-scope:
   - authenticated non-admin callers see only their own pending invitations matched by email
   - admin callers may list one tenant's invitations by passing `tenantId`
+- `/api/v1/network/invitations*` remains a dormant support path; it is no longer the primary onboarding model for this app instance.
 - `POST /api/v1/network/invitations` and `POST /api/v1/network/invitations/:invitationId/revoke` are admin-only bridge routes.
 - `POST /api/v1/network/invitations/:invitationId/accept` requires the authenticated user's email to match the pending invitation email before it writes membership and node assignments.
 - `/api/v1/network/context` returns `200` with `issues` when the secured BLN membership, node assignment, or tenant integration is missing, stale, or holds an invalid API key, instead of converting that local state gap into a hard 4xx.
@@ -154,7 +158,7 @@ This section is implemented runtime truth, but it is not an HTTP route surface y
   - `backend/src/app/network/network.service.js`
 - Local auth rule:
   - all `/api/v1/network/*` routes require existing local auth
-  - bootstrap remains admin-only
+  - bootstrap, workspace bootstrap, and the `provision-self` compatibility alias remain admin-only
 - First local BLN binding rule:
   - the secured tenant integration lives in `bln_tenant_accounts`
   - local user access is granted through `bln_tenant_memberships`
@@ -179,20 +183,33 @@ This section is implemented runtime truth, but it is not an HTTP route surface y
     - `phoneNumber`
     - optional `trustScore`
   - current behavior:
-    - requires an authenticated local user
-    - is intended for explicit workspace creation or client onboarding, not generic signup
+    - requires a local admin
+    - is intended for one explicit workspace creation or client onboarding flow, not generic signup
     - bootstraps one tenant and first node in the sibling `logistics-api`
     - stores the returned tenant API key only in encrypted backend storage
     - creates the local tenant membership as `OWNER`
     - creates the local default node assignment for the current user
     - returns only safe API key metadata: `last4` and `createdAt`
-    - rejects the request when the current user already has an active BLN tenant membership
+    - rejects the request when this delivery app instance already has an active BLN workspace tenant
 - `POST /api/v1/network/provision-self`
   - current behavior:
-    - compatibility alias for `POST /api/v1/network/workspaces/bootstrap`
+    - admin-only compatibility alias for `POST /api/v1/network/workspaces/bootstrap`
+- `POST /api/v1/network/nodes/self/request-otp`
+  - authenticated self-service node activation start
+  - requires that this delivery app instance already has one configured BLN workspace tenant
+  - reuses the current user's stored phone number unless a phone number is passed explicitly
+  - auto-provisions or refreshes the local workspace membership before contacting the sibling BLN backend
+  - calls the sibling `logistics-api` `POST /api/node-auth/claims/request` route through the stored tenant API key
+  - returns `challengeId`, `expiresAt`, `provider`, the resolved `phoneNumber`, and the local `membership`
+- `POST /api/v1/network/nodes/self/verify-otp`
+  - authenticated self-service node activation completion
+  - forwards `challengeId` plus `pin` to the sibling `logistics-api` `POST /api/node-auth/claims/verify` route through the stored tenant API key
+  - upserts the local default node assignment for the activated node
+  - returns the resolved BLN `tenant`, BLN `node`, local `membership`, local `assignment`, and upstream token expiry metadata
 - `GET /api/v1/network/context`
   - current response shape:
     - `actor`
+    - `userPhoneNumber`
     - `binding`
     - `memberships`
     - `assignments`
@@ -203,6 +220,7 @@ This section is implemented runtime truth, but it is not an HTTP route surface y
   - non-admin callers stay limited to BLN tenants where they hold an active membership
   - the route requires explicit `tenantId` or `nodeId` only when the user has multiple active memberships or assignments
   - the route mints a fresh backend-only node session to confirm the selected tenant integration credentials are still valid
+  - when the workspace exists but the current user has no active node assignment, the route now reports `BLN_NODE_OTP_REQUIRED` if the user has a phone number or `BLN_PHONE_NUMBER_REQUIRED` if they do not
 - `GET /api/v1/network/invitations`
   - authenticated non-admin callers receive their own pending invitations by email
   - admin callers may pass `tenantId` and optional `status` to inspect one tenant's invitation records

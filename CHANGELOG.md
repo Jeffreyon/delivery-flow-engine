@@ -22,6 +22,14 @@ This file records material changes to how the template should be understood or u
 - Updated migration and prompt-routing guidance so future agents do not add more local delivery schema or contract surface by reflex when the next active gap is still the external BLN integration layer.
 - Fixed the signup user insert path so staging and local user creation now write the correct `users` column count, and added a focused repository regression test to keep the insert placeholder count aligned.
 
+## 2026-04-10
+
+### Changed
+- Completed the single-workspace onboarding correction so one Delivery Flow Engine instance now maps to one BLN workspace tenant, the first admin bootstraps that tenant once, and later signup stays local-only.
+- Added authenticated self node OTP request and verify routes above the sibling `logistics-api`, so signed-in users can activate their node without exposing tenant API keys or node session tokens to the browser.
+- Reconciled the app docs to mark slice `21-single-tenant-workspace-and-user-node-otp` as implemented and to stop describing invitation-first onboarding as the primary path.
+- Landed the first stateless operator workspace under `/dashboard/operations`, backed by the existing local BLN delivery and handoff facade routes, and explicitly deferred queue jobs plus durable local projections until operational cost justifies them.
+
 ## 2026-04-03
 
 ### Changed

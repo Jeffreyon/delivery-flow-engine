@@ -47,12 +47,12 @@
 | 13 | `docs/slices/13-tenant-context-and-node-bridge.md` | backend | 13 | No | Implemented | 11, 12 |
 | 14 | `docs/slices/14-remote-deliveries-and-events-facade.md` | backend | 14 | No | Implemented | 12, 13 |
 | 15 | `docs/slices/15-handoffs-and-custody-workspace.md` | backend or full-stack | 15 | No | Implemented | 12, 13, 14 |
-| 16 | `docs/slices/16-projections-jobs-and-ops-surface.md` | full-stack | 16 | Maybe | Planned | 01, 14, 15 |
+| 16 | `docs/slices/16-projections-jobs-and-ops-surface.md` | full-stack | 16 | Maybe | Implemented | 01, 14, 15 |
 | 17 | `docs/slices/17-tenant-user-and-node-management.md` | backend | 17 | No | Implemented | 12, 13, 15 |
 | 18 | `docs/slices/18-signup-network-provisioning.md` | backend or full-stack | 18 | No | Implemented | 12, 13, 17 |
 | 19 | `docs/slices/19-workspace-bootstrap-outside-signup.md` | backend and frontend | 19 | No | Implemented | 13, 17, 18 |
 | 20 | `docs/slices/20-tenant-invitations-and-join-flow.md` | backend and frontend | 20 | Yes | Superseded | 17, 19 |
-| 21 | `docs/slices/21-single-tenant-workspace-and-user-node-otp.md` | backend and frontend | 21 | No | In progress | 19, 20 |
+| 21 | `docs/slices/21-single-tenant-workspace-and-user-node-otp.md` | backend and frontend | 21 | No | Implemented | 19, 20 |
 
 ## Required pack fields
 - `Type`

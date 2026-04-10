@@ -262,6 +262,22 @@ export default function DashboardHome() {
                 Phone: {state.networkContext?.userPhoneNumber || "not set"}
               </p>
             </article>
+            <article className="rounded-lg border border-border/70 bg-background/40 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-semibold">Operations workspace</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Open the BLN-backed delivery and custody view for this workspace.
+                  </p>
+                </div>
+                <Link
+                  to="/dashboard/operations"
+                  className="inline-flex items-center rounded-md border border-border px-3 py-2 text-xs font-medium text-foreground transition hover:bg-muted/40"
+                >
+                  Open
+                </Link>
+              </div>
+            </article>
           </div>
         </div>
 

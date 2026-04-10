@@ -5,6 +5,7 @@ import Signup from "@/pages/auth/Signup";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
 import VerifyEmail from "@/pages/auth/VerifyEmail";
 import DashboardHome from "@/pages/user/DashboardHome";
+import OperationsWorkspacePage from "@/pages/user/OperationsWorkspacePage";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import AccountPage from "@/pages/user/AccountPage";
 import NotificationsPage from "@/pages/user/NotificationsPage";
@@ -52,6 +53,10 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <DashboardHome />
+      },
+      {
+        path: "operations",
+        element: <OperationsWorkspacePage />
       },
       {
         path: "account",
