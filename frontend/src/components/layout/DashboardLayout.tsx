@@ -7,6 +7,7 @@ import { apiClient } from "@/lib/apiClient";
 import { MobileNavDialog, type MobileNavItem } from "@/components/layout/MobileNavDialog";
 import {
   LayoutDashboard,
+  Package,
   Bell,
   Shield,
   User as UserIcon,
@@ -28,6 +29,11 @@ export default function DashboardLayout() {
       label: "Overview",
       icon: <LayoutDashboard className="h-4 w-4" />,
       end: true,
+    },
+    {
+      to: "/dashboard/operations",
+      label: "Operations",
+      icon: <Package className="h-4 w-4" />,
     },
     {
       to: "/dashboard/notifications",
@@ -102,6 +108,12 @@ export default function DashboardLayout() {
             to="/dashboard"
             label="Overview"
             icon={<LayoutDashboard className="h-3.5 w-3.5" />}
+            collapsed={sidebarCollapsed}
+          />
+          <DashboardNavLink
+            to="/dashboard/operations"
+            label="Operations"
+            icon={<Package className="h-3.5 w-3.5" />}
             collapsed={sidebarCollapsed}
           />
           <DashboardNavLink
@@ -186,7 +198,7 @@ export default function DashboardLayout() {
           <div className="flex items-center gap-3">
             <MobileNavDialog
               title="Workspace navigation"
-              description="Move between your account, notifications, and security views."
+              description="Move between your overview, operations, account, notifications, and security views."
               homeHref="/dashboard"
               brandLabel="Workspace"
               profilePrimary={profile?.displayName || profile?.email}
@@ -198,7 +210,7 @@ export default function DashboardLayout() {
             <div className="flex flex-col gap-1">
               <h1 className="text-sm font-semibold">Dashboard</h1>
               <p className="text-xs text-muted-foreground">
-                Overview of your account, security, and activity.
+                Overview of your account, workspace operations, security, and activity.
               </p>
             </div>
           </div>

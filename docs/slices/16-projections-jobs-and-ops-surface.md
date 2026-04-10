@@ -4,7 +4,7 @@
 - Run order: `16`
 - Depends on: Slices 01, 14, and 15
 - Migration need: `Maybe`
-- Status: `Planned`
+- Status: `Implemented`
 
 ## PRD coverage
 - useful dashboard and workflow polish on top of the external network
@@ -14,13 +14,13 @@
 ## Current state, gap, recommended target
 | Current state | Gap | Recommended target |
 |---|---|---|
-| Redis, BullMQ, and a worker already exist | No BLN projection refresh, alerting, or notification jobs exist yet | Reuse the async baseline for cached summaries and operational alerts only after the remote facade is real |
-| Delivery, handoff, and transport data will exist through earlier slices | The app still would not have operator-friendly overviews, stalled-work alerts, or summarized dashboards | Add app-owned summaries and alerts without taking delivery ownership away from the BLN backend |
-| Local delivery tables exist in schema | It is still unclear whether the app needs durable projection storage or can stay stateless for longer | Add local schema only if summaries, bindings, or alerting truly need durability |
+| Redis, BullMQ, and a worker already exist | No BLN projection refresh, alerting, or notification jobs exist yet | Keep the async baseline ready, but do not add jobs until a real refresh or alerting problem appears |
+| Delivery, handoff, and transport data already exist through earlier slices | Operators still needed a useful first-party workspace to inspect delivery and custody state | Add the first stateless operator workspace on top of the BLN-backed facade without taking delivery ownership away from the BLN backend |
+| Local delivery tables exist in schema | It is still unclear whether the app needs durable projection storage or can stay stateless for longer | Stay stateless in this slice and add local schema only if summaries, bindings, or alerting later need durability |
 
 ## Scope
 - Decide whether the app needs local projection storage, scheduled refresh jobs, or both.
-- If justified, add the first bounded queue jobs for BLN summary refresh, stalled-handoff detection, or notification fanout.
+- Keep jobs and local projection storage deferred when the current BLN-backed facade is sufficient.
 - Add the first operator dashboard or overview surfaces on top of BLN-backed data.
 - If map-backed operator surfaces are approved later, treat `Navigatr` as the current future SDK candidate for route or custody visualization instead of introducing a generic map dependency earlier in the queue.
 - Document what remains stateless versus what now persists locally.
@@ -65,6 +65,11 @@
 - The app has an explicit operator-surface and async strategy on top of the BLN-backed facade.
 - Any local persistence that lands has a clear reason and does not compete with the BLN source of truth.
 - Queue jobs and UI surfaces are test-covered where they exist.
+
+## Outcome
+- Landed a stateless operator workspace under `/dashboard/operations`.
+- Reused the existing local BLN facade routes for delivery list, delivery detail, event timeline, handoff status, and handoff history.
+- Added no queue jobs and no local projection storage in this slice because the first operator surface does not yet justify durability or refresh orchestration.
 
 ## Allowed deferrals
 - long-term analytics

@@ -4,7 +4,7 @@
 - Run order: `21`
 - Depends on: Slices 19 and 20
 - Migration need: `No`
-- Status: `In progress`
+- Status: `Implemented`
 
 ## PRD coverage
 - client installation onboarding
@@ -14,7 +14,7 @@
 ## Current state, gap, recommended target
 | Current state | Gap | Recommended target |
 |---|---|---|
-| Explicit workspace bootstrap exists and invitation-based tenant join also exists | This app instance actually represents one client workspace, so user-created workspaces and invitation-first onboarding are the wrong default | Lock workspace bootstrap to the first admin and first run, then auto-scope every later user to that single tenant |
+| Explicit workspace bootstrap exists and the older invitation join flow still exists as residue | This app instance actually represents one client workspace, so user-created workspaces and invitation-first onboarding are the wrong default | Lock workspace bootstrap to the first admin and first run, then auto-scope every later user to that single tenant |
 | Delivery and handoff access already require a BLN node assignment | New users still have no first-party phone verification path to activate their node, and signup does not persist a phone number yet | Add authenticated OTP request and verify routes for self node activation, persist signup phone numbers locally, and drive the first onboarding UI from that path |
 
 ## Scope
@@ -42,4 +42,8 @@
 - `frontend`: `npm run build`
 
 ## Staging follow-through
-- Requested after local implementation.
+- Completed:
+  - staged signup stays local-only
+  - first-admin workspace bootstrap stays first-run only
+  - authenticated users can request an OTP through the sibling `logistics-api`
+  - authenticated users can verify the OTP and activate a node for the configured workspace tenant
