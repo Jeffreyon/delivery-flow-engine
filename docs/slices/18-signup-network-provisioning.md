@@ -6,6 +6,10 @@
 - Migration need: `No`
 - Status: `Implemented`
 
+## Later correction
+- Slice 19 moved BLN tenant bootstrap back out of generic signup and into explicit workspace creation.
+- Treat this slice as the bridge-foundation step, not the final product boundary.
+
 ## PRD coverage
 - client onboarding
 - first tenant bootstrap

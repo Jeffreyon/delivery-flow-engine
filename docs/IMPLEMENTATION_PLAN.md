@@ -17,7 +17,7 @@
 |---|---|---|---|
 | 1. BLN contract alignment | The PRD names an external delivery API, and the sibling `logistics-api` now supplies it | The active docs and pack queue do not yet map that product boundary clearly | Make the external BLN contract the active planning baseline |
 | 2. Client and auth bridge | The backend-only logistics client plus the first local tenant-integration, membership, and node-assignment bridge now exist | The bridge is still backend-only and local role semantics are still intentionally small | Reuse the current bridge for UI and projection slices instead of widening auth again |
-| 3. BLN-backed app routes | Local `/api/v1/network/*`, `/api/v1/deliveries*`, and `/api/v1/handoffs*` now proxy or compose BLN data | The frontend still has no custody routes or operator UI to call | Build UI features on the same boundary instead of bypassing it |
+| 3. BLN-backed app routes | Local `/api/v1/network/*`, `/api/v1/deliveries*`, and `/api/v1/handoffs*` now proxy or compose BLN data, and explicit workspace bootstrap now lives outside generic signup | The current onboarding still carries invitation-era residue instead of the single-workspace-per-instance rule the product now needs | Lock the app to one workspace tenant, auto-provision local user membership for that workspace, and add OTP node activation on the same boundary |
 | 4. Custody feature exposure | The BLN backend already supports handoffs, retries, disputes, resolution, and transport diagnostics, and the app now exposes those flows locally | Operators still cannot use those differentiators from the app UI | Make custody and handoff workflows the first real product features on top of the BLN API |
 | 5. Projection and async jobs | Redis plus BullMQ and a worker already exist locally | No BLN projection, alerting, or sync jobs exist yet | Reuse the async baseline later for cached summaries, stalled-handoff alerts, and notifications |
 | 6. Dormant local delivery schema | Local delivery tables already exist | They could keep attracting more local-first runtime work | Keep them archived until the app needs business objects or projections the BLN backend does not own |
@@ -54,11 +54,15 @@
 | 15 | `docs/slices/15-handoffs-and-custody-workspace.md` | backend or full-stack | 15 | Implemented | Adds handoff, custody, dispute, and diagnostics flows on top of the BLN API with membership-scoped node-session auth |
 | 16 | `docs/slices/16-projections-jobs-and-ops-surface.md` | full-stack | 16 | Planned | Adds cached summaries, alerts, and operator UI on top of the BLN-backed routes |
 | 17 | `docs/slices/17-tenant-user-and-node-management.md` | backend | 17 | Implemented | Adds admin-side tenant-member management and node-assignment persistence above the BLN bridge |
+| 18 | `docs/slices/18-signup-network-provisioning.md` | backend or full-stack | 18 | Implemented | Added an explicit onboarding bridge, then later corrected the product boundary so generic signup stays local-only |
+| 19 | `docs/slices/19-workspace-bootstrap-outside-signup.md` | backend and frontend | 19 | Implemented | Moves BLN tenant bootstrap out of generic signup and into explicit workspace creation |
+| 20 | `docs/slices/20-tenant-invitations-and-join-flow.md` | backend and frontend | 20 | Superseded | Invitation-first onboarding no longer matches the single-workspace-per-instance product boundary |
+| 21 | `docs/slices/21-single-tenant-workspace-and-user-node-otp.md` | backend and frontend | 21 | In progress | Locks the app to one workspace tenant, makes bootstrap first-run admin-only, and adds user OTP node activation |
 
 ## BLN-backed feature opportunities
 | Feature | BLN dependency | Why it belongs in Delivery Flow Engine |
 |---|---|---|
-| Tenant and node onboarding wizard | tenant bootstrap and node routes | Turns the raw BLN admin surface into an app-friendly setup flow |
+| Tenant and node onboarding wizard | tenant bootstrap, node claim, and node routes | Turns one-time workspace setup plus user phone verification into an app-friendly setup flow |
 | Connected delivery dashboard | remote deliveries and events | Gives operators a useful default view without duplicating delivery ownership locally |
 | Delivery detail timeline | remote delivery detail and events | Maps directly to the PRD timeline requirement while staying BLN-backed |
 | Handoff inbox and outbox | handoff status, history, verify, retry, initiate | Exposes the custody-transfer differentiator that the BLN backend already supports |
@@ -72,4 +76,4 @@
 | Action | Files | Purpose | Follow-on ownership |
 |---|---|---|---|
 | 1. Start from the active BLN integration pack index | `docs/slices/README.md` | Use the new integration queue instead of reviving the archived local-first packs by default | docs-only |
-| 2. Land operator delivery and custody surfaces next | `docs/slices/16-projections-jobs-and-ops-surface.md` | Build UI, summaries, and alerts on top of the implemented membership-scoped BLN route facade instead of widening backend ownership | full-stack |
+| 2. Land operator delivery or custody surfaces plus admin invite creation next | `docs/slices/16-projections-jobs-and-ops-surface.md` plus later admin invite UI packs | Build UI, summaries, alerts, and first-party invite management on top of the implemented membership-scoped BLN route facade instead of widening backend ownership | full-stack |

@@ -30,13 +30,17 @@ async function signup({ email, password, profile = {} }) {
   const uid = uuidv4();
   const passwordHash = await bcrypt.hash(password, 12);
 
+  const normalizedPhoneNumber = String(profile.phoneNumber || "").trim();
   const userPayload = {
     email,
     displayName: profile.displayName,
     photoURL: profile.photoURL,
     roles: profile.roles || [],
     emailVerified: false,
-    preferences: profile.preferences || {},
+    preferences: {
+      ...(profile.preferences || {}),
+      ...(normalizedPhoneNumber ? { phoneNumber: normalizedPhoneNumber } : {}),
+    },
     passwordHash,
   };
 

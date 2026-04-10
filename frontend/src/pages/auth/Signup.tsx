@@ -1,21 +1,20 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { setAuthToken } from "@/lib/authToken";
 import { signup } from "@/services/auth.api";
-import { provisionSelfNetwork } from "@/services/network.api";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { useToast } from "@/hooks/useToast";
 
 type SignupFormValues = {
   displayName: string;
-  tenantName: string;
-  phoneNumber: string;
   email: string;
+  phoneNumber: string;
   password: string;
 };
 
 export default function Signup() {
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
@@ -26,7 +25,6 @@ export default function Signup() {
 
   async function onSubmit(values: SignupFormValues) {
     setLoading(true);
-    let accountCreated = false;
 
     try {
       const res = await signup({
@@ -34,33 +32,23 @@ export default function Signup() {
         password: values.password,
         profile: {
           displayName: values.displayName,
+          phoneNumber: values.phoneNumber,
         },
       });
       if (res.idToken) {
         setAuthToken(res.idToken);
       }
-      accountCreated = true;
-      await provisionSelfNetwork({
-        tenantName: values.tenantName,
-        phoneNumber: values.phoneNumber,
-      });
       success(
-        "Your account and network workspace have been created.",
+        "Your account is ready. Continue to workspace setup to finish BLN access for this client instance.",
         "Account created"
       );
+      navigate("/dashboard/workspace", { replace: true });
     } catch (err) {
       console.error(err);
-      if (accountCreated) {
-        showErrorToast(
-          "Your account was created, but network provisioning failed. Sign in and retry after support confirms the network bridge is healthy.",
-          "Provisioning failed"
-        );
-      } else {
-        showErrorToast(
-          "Sign up failed. Please try again.",
-          "Sign up failed"
-        );
-      }
+      showErrorToast(
+        "Sign up failed. Please try again.",
+        "Sign up failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -102,43 +90,6 @@ export default function Signup() {
           )}
         </div>
         <div className="space-y-2">
-          <label className="block text-sm font-medium" htmlFor="tenantName">
-            Workspace name
-          </label>
-          <input
-            id="tenantName"
-            type="text"
-            {...register("tenantName", {
-              required: "Workspace name is required",
-            })}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          />
-          {errors.tenantName && (
-            <p className="text-xs text-destructive" role="alert">
-              {errors.tenantName.message}
-            </p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <label className="block text-sm font-medium" htmlFor="phoneNumber">
-            Node phone number
-          </label>
-          <input
-            id="phoneNumber"
-            type="tel"
-            placeholder="+2348012345678"
-            {...register("phoneNumber", {
-              required: "Node phone number is required",
-            })}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          />
-          {errors.phoneNumber && (
-            <p className="text-xs text-destructive" role="alert">
-              {errors.phoneNumber.message}
-            </p>
-          )}
-        </div>
-        <div className="space-y-2">
           <label className="block text-sm font-medium" htmlFor="email">
             Email
           </label>
@@ -151,6 +102,25 @@ export default function Signup() {
           {errors.email && (
             <p className="text-xs text-destructive" role="alert">
               {errors.email.message}
+            </p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium" htmlFor="phoneNumber">
+            Phone number
+          </label>
+          <input
+            id="phoneNumber"
+            type="tel"
+            placeholder="+2348012345678"
+            {...register("phoneNumber", {
+              required: "Phone number is required",
+            })}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          />
+          {errors.phoneNumber && (
+            <p className="text-xs text-destructive" role="alert">
+              {errors.phoneNumber.message}
             </p>
           )}
         </div>

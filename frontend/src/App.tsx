@@ -9,6 +9,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import AccountPage from "@/pages/user/AccountPage";
 import NotificationsPage from "@/pages/user/NotificationsPage";
 import SecurityPage from "@/pages/user/SecurityPage";
+import WorkspaceOnboardingPage from "@/pages/user/WorkspaceOnboardingPage";
 import AdminDashboardLayout from "@/pages/admin/AdminDashboardLayout";
 import AdminOverview from "@/pages/admin/AdminOverview";
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
@@ -63,6 +64,10 @@ const router = createBrowserRouter([
       {
         path: "security",
         element: <SecurityPage />
+      },
+      {
+        path: "workspace",
+        element: <WorkspaceOnboardingPage />
       }
     ]
   },
