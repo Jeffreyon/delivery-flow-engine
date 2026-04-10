@@ -22,6 +22,7 @@ describe("network service bridge", () => {
   let tenantIntegrationsRepository;
   let tenantMembershipsRepository;
   let nodeAssignmentsRepository;
+  let tenantInvitationsRepository;
   let logisticsClient;
   let tenantApiKeyCipher;
   let NetworkService;
@@ -29,14 +30,17 @@ describe("network service bridge", () => {
   beforeEach(() => {
     usersRepository = {
       getById: jest.fn(),
+      getByEmail: jest.fn(),
       listByIds: jest.fn(),
       upsert: jest.fn(),
     };
     tenantIntegrationsRepository = {
       getByTenantId: jest.fn(),
+      listAll: jest.fn(),
       upsert: jest.fn(),
     };
     tenantMembershipsRepository = {
+      getByUserIdAndTenantId: jest.fn(),
       listByUserId: jest.fn(),
       listByTenantId: jest.fn(),
       upsert: jest.fn(),
@@ -46,9 +50,19 @@ describe("network service bridge", () => {
       listByTenantId: jest.fn(),
       upsert: jest.fn(),
     };
+    tenantInvitationsRepository = {
+      getById: jest.fn(),
+      getPendingByTenantIdAndEmail: jest.fn(),
+      listByEmail: jest.fn(),
+      listByTenantId: jest.fn(),
+      create: jest.fn(),
+      updateStatus: jest.fn(),
+    };
     logisticsClient = {
       bootstrapTenant: jest.fn(),
       createNodeSession: jest.fn(),
+      requestNodeClaim: jest.fn(),
+      verifyNodeClaim: jest.fn(),
       listNodes: jest.fn(),
       createNode: jest.fn(),
       exchangeTenantAccess: jest.fn(),
@@ -63,6 +77,7 @@ describe("network service bridge", () => {
       tenantIntegrationsRepository,
       tenantMembershipsRepository,
       nodeAssignmentsRepository,
+      tenantInvitationsRepository,
       logisticsClient,
       tenantApiKeyCipher,
     });
@@ -75,6 +90,7 @@ describe("network service bridge", () => {
       ...payload,
       id,
     }));
+    tenantIntegrationsRepository.listAll.mockResolvedValue([]);
     tenantIntegrationsRepository.upsert.mockResolvedValue({
       tenantId: "tenant-1",
       apiKeyEncrypted: "enc-key",
@@ -215,6 +231,7 @@ describe("network service bridge", () => {
       ...payload,
       id,
     }));
+    tenantIntegrationsRepository.listAll.mockResolvedValue([]);
     tenantIntegrationsRepository.upsert.mockResolvedValue({
       tenantId: "tenant-signup-1",
       apiKeyEncrypted: "enc-key",
@@ -223,7 +240,6 @@ describe("network service bridge", () => {
       createdAt: 456,
       updatedAt: 456,
     });
-    tenantMembershipsRepository.listByUserId.mockResolvedValue([]);
     tenantMembershipsRepository.upsert.mockResolvedValue({
       userId: "user-1",
       tenantId: "tenant-signup-1",
@@ -266,7 +282,7 @@ describe("network service bridge", () => {
       {
         uid: "user-1",
         email: "user@example.com",
-        isAdmin: false,
+        isAdmin: true,
       },
       {
         tenantName: "Workspace One",
@@ -335,13 +351,11 @@ describe("network service bridge", () => {
     });
   });
 
-  test("provisionSelfNetwork rejects users who already have an active BLN membership", async () => {
+  test("provisionSelfNetwork rejects bootstrap when the app workspace already exists", async () => {
     usersRepository.getById.mockResolvedValue(baseUser);
-    tenantMembershipsRepository.listByUserId.mockResolvedValue([
+    tenantIntegrationsRepository.listAll.mockResolvedValue([
       {
-        userId: "user-1",
-        tenantId: "tenant-1",
-        role: "OWNER",
+        tenantId: "tenant-existing",
         status: "ACTIVE",
       },
     ]);
@@ -351,7 +365,7 @@ describe("network service bridge", () => {
         {
           uid: "user-1",
           email: "user@example.com",
-          isAdmin: false,
+          isAdmin: true,
         },
         {
           tenantName: "Workspace One",
@@ -360,7 +374,7 @@ describe("network service bridge", () => {
       )
     ).rejects.toMatchObject({
       status: 409,
-      message: "A BLN tenant membership already exists for the current user",
+      message: "A BLN workspace is already configured for this delivery app instance",
     });
 
     expect(logisticsClient.bootstrapTenant).not.toHaveBeenCalled();
@@ -374,7 +388,7 @@ describe("network service bridge", () => {
       ...payload,
       id,
     }));
-    tenantMembershipsRepository.listByUserId.mockResolvedValue([]);
+    tenantIntegrationsRepository.listAll.mockResolvedValue([]);
     tenantIntegrationsRepository.upsert.mockResolvedValue({
       tenantId: "tenant-signup-2",
       apiKeyEncrypted: "enc-key",
@@ -421,7 +435,7 @@ describe("network service bridge", () => {
       {
         uid: "user-1",
         email: "user@example.com",
-        isAdmin: false,
+        isAdmin: true,
       },
       {
         tenantName: "Workspace Two",
@@ -443,7 +457,7 @@ describe("network service bridge", () => {
 
   test("getNetworkContext returns an unbound issue when the current user has no active membership", async () => {
     usersRepository.getById.mockResolvedValue(baseUser);
-    tenantMembershipsRepository.listByUserId.mockResolvedValue([]);
+    tenantIntegrationsRepository.listAll.mockResolvedValue([]);
 
     const result = await NetworkService.getNetworkContext(
       {
@@ -460,6 +474,7 @@ describe("network service bridge", () => {
         email: "user@example.com",
         isAdmin: false,
       },
+      userPhoneNumber: null,
       binding: null,
       memberships: [],
       assignments: [],
@@ -468,30 +483,30 @@ describe("network service bridge", () => {
       node: null,
       issues: [
         {
-          code: "BLN_CONTEXT_UNBOUND",
-          message: "No BLN tenant membership is configured for the current user",
+          code: "BLN_WORKSPACE_PENDING",
+          message:
+            "This delivery app instance has not finished BLN workspace setup yet",
         },
       ],
     });
     expect(logisticsClient.createNodeSession).not.toHaveBeenCalled();
   });
 
-  test("getNetworkContext returns a tenant selection issue when the current user belongs to multiple BLN tenants", async () => {
+  test("getNetworkContext returns a phone requirement issue when the workspace exists but the user has no node yet", async () => {
     usersRepository.getById.mockResolvedValue(baseUser);
-    tenantMembershipsRepository.listByUserId.mockResolvedValue([
+    tenantIntegrationsRepository.listAll.mockResolvedValue([
       {
-        userId: "user-1",
         tenantId: "tenant-1",
-        role: "OWNER",
-        status: "ACTIVE",
-      },
-      {
-        userId: "user-1",
-        tenantId: "tenant-2",
-        role: "MEMBER",
         status: "ACTIVE",
       },
     ]);
+    tenantMembershipsRepository.getByUserIdAndTenantId.mockResolvedValue({
+      userId: "user-1",
+      tenantId: "tenant-1",
+      role: "MEMBER",
+      status: "ACTIVE",
+    });
+    nodeAssignmentsRepository.listByUserIdAndTenantId.mockResolvedValue([]);
 
     const result = await NetworkService.getNetworkContext(
       {
@@ -508,30 +523,35 @@ describe("network service bridge", () => {
         email: "user@example.com",
         isAdmin: false,
       },
-      binding: null,
       memberships: [
         {
           userId: "user-1",
           tenantId: "tenant-1",
-          role: "OWNER",
-          status: "ACTIVE",
-        },
-        {
-          userId: "user-1",
-          tenantId: "tenant-2",
           role: "MEMBER",
           status: "ACTIVE",
         },
       ],
       assignments: [],
-      effectiveContext: null,
+      binding: {
+        userId: "user-1",
+        tenantId: "tenant-1",
+        role: "MEMBER",
+        nodeId: null,
+        status: "ACTIVE",
+        isDefaultNode: false,
+      },
+      effectiveContext: {
+        tenantId: "tenant-1",
+        nodeId: null,
+      },
       tenant: null,
       node: null,
+      userPhoneNumber: null,
       issues: [
         {
-          code: "BLN_TENANT_SELECTION_REQUIRED",
+          code: "BLN_PHONE_NUMBER_REQUIRED",
           message:
-            "tenantId is required when the current user belongs to multiple BLN tenants",
+            "A phone number is required before BLN node verification can begin",
         },
       ],
     });
@@ -547,14 +567,20 @@ describe("network service bridge", () => {
         },
       },
     });
-    tenantMembershipsRepository.listByUserId.mockResolvedValue([
+    tenantIntegrationsRepository.listAll.mockResolvedValue([
       {
-        userId: "user-1",
         tenantId: "tenant-1",
-        role: "OWNER",
+        apiKeyEncrypted: "enc-key",
+        apiKeyLast4: "1234",
         status: "ACTIVE",
       },
     ]);
+    tenantMembershipsRepository.getByUserIdAndTenantId.mockResolvedValue({
+      userId: "user-1",
+      tenantId: "tenant-1",
+      role: "OWNER",
+      status: "ACTIVE",
+    });
     nodeAssignmentsRepository.listByUserIdAndTenantId.mockResolvedValue([
       {
         userId: "user-1",
@@ -564,12 +590,6 @@ describe("network service bridge", () => {
         status: "ACTIVE",
       },
     ]);
-    tenantIntegrationsRepository.getByTenantId.mockResolvedValue({
-      tenantId: "tenant-1",
-      apiKeyEncrypted: "enc-key",
-      apiKeyLast4: "1234",
-      status: "ACTIVE",
-    });
     tenantApiKeyCipher.decryptTenantApiKey.mockReturnValue("plain-api-key");
     logisticsClient.createNodeSession.mockRejectedValue(
       new LogisticsApiError("Invalid tenant API key", { status: 401 })
@@ -621,6 +641,7 @@ describe("network service bridge", () => {
       },
       tenant: null,
       node: null,
+      userPhoneNumber: null,
       issues: [
         {
           code: "BLN_TENANT_API_KEY_INVALID",
@@ -632,14 +653,22 @@ describe("network service bridge", () => {
 
   test("resolveTenantAccess mints a backend-only node session from the stored tenant integration and selected assignment", async () => {
     usersRepository.getById.mockResolvedValue(baseUser);
-    tenantMembershipsRepository.listByUserId.mockResolvedValue([
+    tenantIntegrationsRepository.listAll.mockResolvedValue([
       {
-        userId: "user-1",
         tenantId: "tenant-1",
-        role: "OWNER",
+        apiKeyEncrypted: "enc-key",
+        apiKeyLast4: "1234",
         status: "ACTIVE",
+        createdAt: 123,
+        updatedAt: 123,
       },
     ]);
+    tenantMembershipsRepository.getByUserIdAndTenantId.mockResolvedValue({
+      userId: "user-1",
+      tenantId: "tenant-1",
+      role: "OWNER",
+      status: "ACTIVE",
+    });
     nodeAssignmentsRepository.listByUserIdAndTenantId.mockResolvedValue([
       {
         userId: "user-1",
@@ -656,14 +685,6 @@ describe("network service bridge", () => {
         status: "ACTIVE",
       },
     ]);
-    tenantIntegrationsRepository.getByTenantId.mockResolvedValue({
-      tenantId: "tenant-1",
-      apiKeyEncrypted: "enc-key",
-      apiKeyLast4: "1234",
-      status: "ACTIVE",
-      createdAt: 123,
-      updatedAt: 123,
-    });
     tenantApiKeyCipher.decryptTenantApiKey.mockReturnValue("plain-api-key");
     logisticsClient.createNodeSession.mockResolvedValue({
       accessToken: "node-session-token",
@@ -729,14 +750,20 @@ describe("network service bridge", () => {
         },
       },
     });
-    tenantMembershipsRepository.listByUserId.mockResolvedValue([
+    tenantIntegrationsRepository.listAll.mockResolvedValue([
       {
-        userId: "user-1",
         tenantId: "tenant-1",
-        role: "OWNER",
+        apiKeyEncrypted: "enc-key",
+        apiKeyLast4: "1234",
         status: "ACTIVE",
       },
     ]);
+    tenantMembershipsRepository.getByUserIdAndTenantId.mockResolvedValue({
+      userId: "user-1",
+      tenantId: "tenant-1",
+      role: "OWNER",
+      status: "ACTIVE",
+    });
     nodeAssignmentsRepository.listByUserIdAndTenantId.mockResolvedValue([
       {
         userId: "user-1",
@@ -746,12 +773,6 @@ describe("network service bridge", () => {
         status: "ACTIVE",
       },
     ]);
-    tenantIntegrationsRepository.getByTenantId.mockResolvedValue({
-      tenantId: "tenant-1",
-      apiKeyEncrypted: "enc-key",
-      apiKeyLast4: "1234",
-      status: "ACTIVE",
-    });
     tenantApiKeyCipher.decryptTenantApiKey.mockReturnValue("plain-api-key");
     logisticsClient.createNodeSession.mockResolvedValue({
       accessToken: "node-session-token",
@@ -806,6 +827,375 @@ describe("network service bridge", () => {
     });
 
     expect(logisticsClient.createNode).not.toHaveBeenCalled();
+  });
+
+  test("createTenantInvitation stores a pending tenant invitation after validating the target nodes", async () => {
+    tenantIntegrationsRepository.getByTenantId.mockResolvedValue({
+      tenantId: "tenant-1",
+      apiKeyEncrypted: "enc-key",
+      apiKeyLast4: "1234",
+      status: "ACTIVE",
+    });
+    tenantInvitationsRepository.getPendingByTenantIdAndEmail.mockResolvedValue(null);
+    usersRepository.getByEmail.mockResolvedValue(null);
+    logisticsClient.listNodes.mockResolvedValue({
+      items: [
+        { id: "node-1", tenantId: "tenant-1", phoneNumber: "+2348000000000" },
+        { id: "node-2", tenantId: "tenant-1", phoneNumber: "+2348111111111" },
+      ],
+    });
+    tenantInvitationsRepository.create.mockResolvedValue({
+      id: "invite-1",
+      tenantId: "tenant-1",
+      email: "invitee@example.com",
+      role: "MEMBER",
+      status: "PENDING",
+      nodeIds: ["node-1", "node-2"],
+      defaultNodeId: "node-1",
+      invitedByUserId: "admin-1",
+      acceptedByUserId: null,
+      acceptedAt: null,
+      createdAt: 123,
+      updatedAt: 123,
+    });
+
+    const result = await NetworkService.createTenantInvitation(
+      {
+        uid: "admin-1",
+        email: "admin@example.com",
+        isAdmin: true,
+      },
+      {
+        tenantId: "tenant-1",
+        email: "invitee@example.com",
+        role: "MEMBER",
+        nodeIds: ["node-1", "node-2"],
+        defaultNodeId: "node-1",
+      }
+    );
+
+    expect(logisticsClient.listNodes).toHaveBeenCalledWith({ tenantId: "tenant-1" });
+    expect(tenantInvitationsRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: "tenant-1",
+        email: "invitee@example.com",
+        role: "MEMBER",
+        status: "PENDING",
+        nodeIds: ["node-1", "node-2"],
+        defaultNodeId: "node-1",
+        invitedByUserId: "admin-1",
+      })
+    );
+    expect(result).toEqual({
+      invitation: {
+        id: "invite-1",
+        tenantId: "tenant-1",
+        email: "invitee@example.com",
+        role: "MEMBER",
+        status: "PENDING",
+        nodeIds: ["node-1", "node-2"],
+        defaultNodeId: "node-1",
+        invitedByUserId: "admin-1",
+        acceptedByUserId: null,
+        acceptedAt: null,
+        createdAt: 123,
+        updatedAt: 123,
+      },
+    });
+  });
+
+  test("listNetworkInvitations returns pending invitations for the signed-in email", async () => {
+    usersRepository.getById.mockResolvedValue(baseUser);
+    tenantInvitationsRepository.listByEmail.mockResolvedValue([
+      {
+        id: "invite-1",
+        tenantId: "tenant-1",
+        email: "user@example.com",
+        role: "MEMBER",
+        status: "PENDING",
+        nodeIds: ["node-1"],
+        defaultNodeId: "node-1",
+        invitedByUserId: "admin-1",
+        acceptedByUserId: null,
+        acceptedAt: null,
+        createdAt: 111,
+        updatedAt: 111,
+      },
+      {
+        id: "invite-2",
+        tenantId: "tenant-2",
+        email: "user@example.com",
+        role: "MEMBER",
+        status: "REVOKED",
+        nodeIds: ["node-2"],
+        defaultNodeId: "node-2",
+        invitedByUserId: "admin-1",
+        acceptedByUserId: null,
+        acceptedAt: null,
+        createdAt: 112,
+        updatedAt: 112,
+      },
+    ]);
+
+    const result = await NetworkService.listNetworkInvitations(
+      {
+        uid: "user-1",
+        email: "user@example.com",
+        isAdmin: false,
+      },
+      {}
+    );
+
+    expect(result).toEqual({
+      scope: "self",
+      items: [
+        {
+          id: "invite-1",
+          tenantId: "tenant-1",
+          email: "user@example.com",
+          role: "MEMBER",
+          status: "PENDING",
+          nodeIds: ["node-1"],
+          defaultNodeId: "node-1",
+          invitedByUserId: "admin-1",
+          acceptedByUserId: null,
+          acceptedAt: null,
+          createdAt: 111,
+          updatedAt: 111,
+        },
+      ],
+    });
+  });
+
+  test("revokeTenantInvitation marks a pending invitation as revoked", async () => {
+    tenantInvitationsRepository.getById.mockResolvedValue({
+      id: "invite-1",
+      tenantId: "tenant-1",
+      email: "user@example.com",
+      role: "MEMBER",
+      status: "PENDING",
+      nodeIds: ["node-1"],
+      defaultNodeId: "node-1",
+      invitedByUserId: "admin-1",
+      acceptedByUserId: null,
+      acceptedAt: null,
+      createdAt: 123,
+      updatedAt: 123,
+    });
+    tenantInvitationsRepository.updateStatus.mockResolvedValue({
+      id: "invite-1",
+      tenantId: "tenant-1",
+      email: "user@example.com",
+      role: "MEMBER",
+      status: "REVOKED",
+      nodeIds: ["node-1"],
+      defaultNodeId: "node-1",
+      invitedByUserId: "admin-1",
+      acceptedByUserId: null,
+      acceptedAt: null,
+      createdAt: 123,
+      updatedAt: 456,
+    });
+
+    const result = await NetworkService.revokeTenantInvitation(
+      {
+        uid: "admin-1",
+        email: "admin@example.com",
+        isAdmin: true,
+      },
+      {
+        invitationId: "invite-1",
+      }
+    );
+
+    expect(tenantInvitationsRepository.updateStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "invite-1",
+        status: "REVOKED",
+      })
+    );
+    expect(result).toEqual({
+      invitation: {
+        id: "invite-1",
+        tenantId: "tenant-1",
+        email: "user@example.com",
+        role: "MEMBER",
+        status: "REVOKED",
+        nodeIds: ["node-1"],
+        defaultNodeId: "node-1",
+        invitedByUserId: "admin-1",
+        acceptedByUserId: null,
+        acceptedAt: null,
+        createdAt: 123,
+        updatedAt: 456,
+      },
+    });
+  });
+
+  test("acceptTenantInvitation turns a pending invitation into an active membership and assignments", async () => {
+    usersRepository.getById.mockResolvedValue(baseUser);
+    tenantInvitationsRepository.getById.mockResolvedValue({
+      id: "invite-1",
+      tenantId: "tenant-1",
+      email: "user@example.com",
+      role: "MEMBER",
+      status: "PENDING",
+      nodeIds: ["node-1", "node-2"],
+      defaultNodeId: "node-2",
+      invitedByUserId: "admin-1",
+      acceptedByUserId: null,
+      acceptedAt: null,
+      createdAt: 123,
+      updatedAt: 123,
+    });
+    tenantIntegrationsRepository.getByTenantId.mockResolvedValue({
+      tenantId: "tenant-1",
+      apiKeyEncrypted: "enc-key",
+      apiKeyLast4: "1234",
+      status: "ACTIVE",
+    });
+    tenantMembershipsRepository.getByUserIdAndTenantId.mockResolvedValue(null);
+    tenantMembershipsRepository.listByUserId.mockResolvedValue([]);
+    tenantMembershipsRepository.upsert.mockResolvedValue({
+      userId: "user-1",
+      tenantId: "tenant-1",
+      role: "MEMBER",
+      status: "ACTIVE",
+      createdAt: 123,
+      updatedAt: 456,
+    });
+    nodeAssignmentsRepository.listByUserIdAndTenantId
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          userId: "user-1",
+          tenantId: "tenant-1",
+          nodeId: "node-1",
+          isDefault: false,
+          status: "ACTIVE",
+        },
+        {
+          userId: "user-1",
+          tenantId: "tenant-1",
+          nodeId: "node-2",
+          isDefault: true,
+          status: "ACTIVE",
+        },
+      ]);
+    nodeAssignmentsRepository.upsert
+      .mockResolvedValueOnce({
+        userId: "user-1",
+        tenantId: "tenant-1",
+        nodeId: "node-1",
+        isDefault: false,
+        status: "ACTIVE",
+      })
+      .mockResolvedValueOnce({
+        userId: "user-1",
+        tenantId: "tenant-1",
+        nodeId: "node-2",
+        isDefault: true,
+        status: "ACTIVE",
+      });
+    usersRepository.upsert.mockImplementation(async (id, payload) => ({
+      ...baseUser,
+      ...payload,
+      id,
+    }));
+    tenantInvitationsRepository.updateStatus.mockResolvedValue({
+      id: "invite-1",
+      tenantId: "tenant-1",
+      email: "user@example.com",
+      role: "MEMBER",
+      status: "ACCEPTED",
+      nodeIds: ["node-1", "node-2"],
+      defaultNodeId: "node-2",
+      invitedByUserId: "admin-1",
+      acceptedByUserId: "user-1",
+      acceptedAt: 456,
+      createdAt: 123,
+      updatedAt: 456,
+    });
+    logisticsClient.listNodes.mockResolvedValue({
+      items: [
+        { id: "node-1", tenantId: "tenant-1", phoneNumber: "+2348000000000" },
+        { id: "node-2", tenantId: "tenant-1", phoneNumber: "+2348111111111" },
+      ],
+    });
+
+    const result = await NetworkService.acceptTenantInvitation(
+      {
+        uid: "user-1",
+        email: "user@example.com",
+        isAdmin: false,
+      },
+      {
+        invitationId: "invite-1",
+      }
+    );
+
+    expect(tenantMembershipsRepository.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        tenantId: "tenant-1",
+        role: "MEMBER",
+        status: "ACTIVE",
+      })
+    );
+    expect(nodeAssignmentsRepository.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        tenantId: "tenant-1",
+        nodeId: "node-2",
+        isDefault: true,
+        status: "ACTIVE",
+      })
+    );
+    expect(tenantInvitationsRepository.updateStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "invite-1",
+        status: "ACCEPTED",
+        acceptedByUserId: "user-1",
+      })
+    );
+    expect(result).toEqual({
+      invitation: {
+        id: "invite-1",
+        tenantId: "tenant-1",
+        email: "user@example.com",
+        role: "MEMBER",
+        status: "ACCEPTED",
+        nodeIds: ["node-1", "node-2"],
+        defaultNodeId: "node-2",
+        invitedByUserId: "admin-1",
+        acceptedByUserId: "user-1",
+        acceptedAt: 456,
+        createdAt: 123,
+        updatedAt: 456,
+      },
+      membership: {
+        userId: "user-1",
+        tenantId: "tenant-1",
+        role: "MEMBER",
+        status: "ACTIVE",
+      },
+      assignments: [
+        {
+          userId: "user-1",
+          tenantId: "tenant-1",
+          nodeId: "node-1",
+          isDefault: false,
+          status: "ACTIVE",
+        },
+        {
+          userId: "user-1",
+          tenantId: "tenant-1",
+          nodeId: "node-2",
+          isDefault: true,
+          status: "ACTIVE",
+        },
+      ],
+    });
   });
 
   test("listTenantUsers returns tenant members, assignments, and available nodes for admins", async () => {

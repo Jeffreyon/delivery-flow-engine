@@ -285,6 +285,24 @@ function createLogisticsClient(options) {
       });
     },
 
+    requestNodeClaim({ apiKey, payload }) {
+      return apiKeyRequest({
+        method: "POST",
+        path: "/api/node-auth/claims/request",
+        body: payload,
+        apiKey,
+      });
+    },
+
+    verifyNodeClaim({ apiKey, payload }) {
+      return apiKeyRequest({
+        method: "POST",
+        path: "/api/node-auth/claims/verify",
+        body: payload,
+        apiKey,
+      });
+    },
+
     getTenantMe({ tenantCredential }) {
       return tenantRequest({
         method: "GET",

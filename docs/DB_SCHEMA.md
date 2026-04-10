@@ -17,6 +17,7 @@
 | `backend/migrations/0007_create_orders_and_drivers.sql` | Additive SQL | Adds the first delivery business record and driver-profile tables |
 | `backend/migrations/0008_create_deliveries_and_assignments.sql` | Additive SQL | Adds lifecycle-bearing deliveries plus assignment history |
 | `backend/migrations/0009_create_tenant_owner_accounts.sql` | Additive SQL | Adds the durable BLN tenant integration, membership, and node-assignment tables for encrypted tenant API key storage |
+| `backend/migrations/0010_create_bln_tenant_invitations.sql` | Additive SQL | Adds durable email-based tenant invitations for workspace join flows |
 | `backend/scripts/migrate.js` | Executable migration runner | Creates `schema_migrations` and applies ordered SQL files |
 | `backend/scripts/initDb.js` | Bootstrap alias | Delegates to the migration runner |
 | `backend/scripts/seedLocal.js` | Idempotent local demo seed | Inserts roles, users, settings, notifications, devices, and sessions |
@@ -31,6 +32,7 @@
 | `bln_tenant_accounts` | Durable BLN tenant integration | `tenant_id` PK, `api_key_encrypted`, `api_key_last4`, `status` | Stores one encrypted BLN tenant API key per tenant integration |
 | `bln_tenant_memberships` | Durable local membership to a BLN tenant | `user_id`, `tenant_id`, `role`, `status` | Grants tenant-level read access for local users |
 | `bln_node_assignments` | Durable local act-as assignment to a BLN node | `user_id`, `tenant_id`, `node_id`, `is_default`, `status` | Grants node-level runtime access for secure BLN writes |
+| `bln_tenant_invitations` | Durable local invitation to join a BLN tenant | `id` PK, `tenant_id`, `email`, `role`, `status`, `node_ids jsonb` | Powers email-matched invitation acceptance after local signup or login |
 | `notifications` | User notification feed | `id` PK, `to_uid` FK, `read` | Mark-read is now scoped by authenticated user id |
 | `events` | Parent event ledger | `id` PK, `type`, `payload jsonb`, `created_at` | Covers generic platform events and the parent rows for delivery events |
 | `delivery_events` | Delivery-event child ledger | `id` PK and FK to `events.id` | Public list and admin create exist, but lifecycle-owned producers are still missing |
@@ -48,6 +50,9 @@
   - `bln_tenant_memberships.user_id -> users.id` (`ON DELETE CASCADE`)
   - `bln_node_assignments.user_id -> users.id` (`ON DELETE CASCADE`)
   - `bln_node_assignments.(user_id, tenant_id) -> bln_tenant_memberships.(user_id, tenant_id)` (`ON DELETE CASCADE`)
+  - `bln_tenant_invitations.tenant_id -> bln_tenant_accounts.tenant_id` (`ON DELETE CASCADE`)
+  - `bln_tenant_invitations.invited_by_user_id -> users.id` (`ON DELETE SET NULL`)
+  - `bln_tenant_invitations.accepted_by_user_id -> users.id` (`ON DELETE SET NULL`)
   - `notifications.to_uid -> users.id` (`ON DELETE CASCADE`)
   - `delivery_events.id -> events.id` (`ON DELETE CASCADE`)
   - `orders.created_by_uid -> users.id` (`ON DELETE SET NULL`)
@@ -67,6 +72,8 @@
   - `bln_tenant_memberships_tenant_id_idx (tenant_id)`
   - `bln_node_assignments_user_tenant_idx (user_id, tenant_id)`
   - `bln_node_assignments_default_uniq (user_id, tenant_id) WHERE is_default = true`
+  - `bln_tenant_invitations_tenant_created_at_idx (tenant_id, created_at DESC)`
+  - `bln_tenant_invitations_email_status_idx (email, status, created_at DESC)`
   - `notifications_to_uid_created_at_idx (to_uid, created_at DESC)`
   - `orders_created_at_idx (created_at DESC)`
   - `drivers_is_available_idx (is_available)`
@@ -84,6 +91,7 @@
 - The durable BLN tenant integration now lives in `bln_tenant_accounts`.
 - Local BLN membership now lives in `bln_tenant_memberships`.
 - Local BLN node assignment now lives in `bln_node_assignments`.
+- Local BLN invitation state now lives in `bln_tenant_invitations`.
 - `users.preferences.bln` remains only as a compatibility mirror shaped as `{ tenantId, nodeId }`.
 - The encrypted tenant API key in `bln_tenant_accounts.api_key_encrypted` is the only persisted BLN credential in this repo.
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { LoadErrorCard } from "@/components/common/LoadErrorCard";
 import {
   fetchAuthMe,
@@ -13,6 +14,10 @@ import {
   type SessionItem,
   type UserProfile,
 } from "@/services/dashboard.api";
+import {
+  fetchNetworkContext,
+  type NetworkContextResponse,
+} from "@/services/network.api";
 
 type DashboardState = {
   me: UserProfile | null;
@@ -20,6 +25,7 @@ type DashboardState = {
   devices: DeviceItem[];
   sessions: SessionItem[];
   settings: GlobalSettings | null;
+  networkContext: NetworkContextResponse | null;
 };
 
 const initialState: DashboardState = {
@@ -28,6 +34,7 @@ const initialState: DashboardState = {
   devices: [],
   sessions: [],
   settings: null,
+  networkContext: null,
 };
 
 export default function DashboardHome() {
@@ -45,14 +52,21 @@ export default function DashboardHome() {
       }
 
       try {
-        const [auth, notifications, devices, sessions, settings] =
-          await Promise.all([
-            fetchAuthMe(),
-            fetchNotifications(),
-            fetchDevices(),
-            fetchSessions(),
-            fetchGlobalSettings(),
-          ]);
+        const [
+          auth,
+          notifications,
+          devices,
+          sessions,
+          settings,
+          networkContext,
+        ] = await Promise.all([
+          fetchAuthMe(),
+          fetchNotifications(),
+          fetchDevices(),
+          fetchSessions(),
+          fetchGlobalSettings(),
+          fetchNetworkContext(),
+        ]);
 
         const user = await fetchUser(auth.uid);
 
@@ -63,6 +77,7 @@ export default function DashboardHome() {
           devices,
           sessions,
           settings,
+          networkContext,
         });
       } catch {
         if (!active) return;
@@ -79,6 +94,8 @@ export default function DashboardHome() {
   }, [reloadKey]);
 
   const unreadNotifications = state.notifications.filter((n) => !n.read);
+  const hasNetworkContext = Boolean(state.networkContext?.effectiveContext?.tenantId);
+  const networkIssue = state.networkContext?.issues?.[0] || null;
 
   if (loading) {
     return (
@@ -148,6 +165,30 @@ export default function DashboardHome() {
               .
             </p>
           )}
+          {!hasNetworkContext && (
+            <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-3">
+              <p className="text-sm font-medium">Network workspace not configured</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {networkIssue?.message ||
+                  "This user can sign in locally, but BLN workspace or node setup is still incomplete."}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-3">
+                <Link
+                  to="/dashboard/workspace"
+                  className="inline-flex items-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                >
+                  {networkIssue?.code === "BLN_WORKSPACE_BOOTSTRAP_REQUIRED"
+                    ? "Bootstrap workspace"
+                    : "Finish BLN setup"}
+                </Link>
+                <span className="text-xs text-muted-foreground">
+                  {networkIssue?.code === "BLN_WORKSPACE_PENDING"
+                    ? "Wait for the first admin to complete workspace setup."
+                    : "Verify the user phone number after workspace bootstrap to activate a node."}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -167,6 +208,12 @@ export default function DashboardHome() {
             <div className="flex items-center justify-between gap-2">
               <dt className="text-muted-foreground">Sessions</dt>
               <dd className="font-semibold">{state.sessions.length}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <dt className="text-muted-foreground">BLN access</dt>
+              <dd className="font-semibold">
+                {hasNetworkContext ? "Connected" : "Pending"}
+              </dd>
             </div>
             <div className="flex items-center justify-between gap-2">
               <dt className="text-muted-foreground">Regions</dt>
@@ -200,6 +247,19 @@ export default function DashboardHome() {
               </p>
               <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
                 Allowed regions: {state.settings?.allowedRegions?.join(", ") || "none"}
+              </p>
+            </article>
+            <article className="rounded-lg border border-border/70 bg-background/40 p-3">
+              <h4 className="text-xs font-semibold">Network status</h4>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Tenant:{" "}
+                {state.networkContext?.effectiveContext?.tenantId || "Not assigned"}
+              </p>
+              <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                Node: {state.networkContext?.effectiveContext?.nodeId || "none"}
+              </p>
+              <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                Phone: {state.networkContext?.userPhoneNumber || "not set"}
               </p>
             </article>
           </div>

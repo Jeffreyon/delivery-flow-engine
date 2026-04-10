@@ -10,6 +10,7 @@ export type SignupPayload = {
   password: string;
   profile?: {
     displayName?: string;
+    phoneNumber?: string;
   };
 };
 

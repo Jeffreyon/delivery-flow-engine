@@ -29,6 +29,21 @@ async function getByTenantId(client, tenantId) {
   return mapRow(result.rows[0]);
 }
 
+async function listAll(client) {
+  const result = await client.query(
+    `SELECT tenant_id,
+            api_key_encrypted,
+            api_key_last4,
+            status,
+            created_at,
+            updated_at
+     FROM bln_tenant_accounts
+     ORDER BY created_at ASC, tenant_id ASC`
+  );
+
+  return result.rows.map(mapRow).filter(Boolean);
+}
+
 async function upsert(client, tenantAccount) {
   const result = await client.query(
     `INSERT INTO bln_tenant_accounts (
@@ -67,9 +82,13 @@ module.exports = {
   getByTenantId(tenantId) {
     return getByTenantId({ query }, tenantId);
   },
+  listAll() {
+    return listAll({ query });
+  },
   upsert(tenantAccount) {
     return upsert({ query }, tenantAccount);
   },
   getByTenantIdWithClient: getByTenantId,
+  listAllWithClient: listAll,
   upsertWithClient: upsert,
 };

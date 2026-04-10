@@ -7,7 +7,7 @@
 ## Surfaces
 - Public: `/`
 - Auth: `/auth/login`, `/auth/signup`, `/auth/forgot-password`, `/auth/verify-email`
-- User dashboard: `/dashboard`, `/dashboard/account`, `/dashboard/notifications`, `/dashboard/security`
+- User dashboard: `/dashboard`, `/dashboard/workspace`, `/dashboard/account`, `/dashboard/notifications`, `/dashboard/security`
 - Admin dashboard: `/admin/dashboard`, `/admin/dashboard/users`, `/admin/dashboard/events`, `/admin/dashboard/roles`
 
 ## Route map
@@ -23,7 +23,7 @@
 | Area | Status | Current state |
 |---|---|---|
 | Auth flows | Existing | Login, signup, forgot-password, verify-email |
-| User account | Existing | Overview, account, notifications, security |
+| User account | Existing | Overview, workspace onboarding, invitation join, account, notifications, security |
 | Admin operations | Partial | Overview, users, delivery events, roles |
 | Settings UI | Missing | Only backend global settings read exists |
 | Write-oriented admin forms | Missing | No create or edit workflows for admin entities |
@@ -77,8 +77,9 @@ This section is a recommended target, not current runtime truth.
 
 | Surface | Why it fits this repo | Depends on |
 |---|---|---|
-| BLN connection setup | Turns tenant bootstrap and node setup into an app-friendly workflow | local BLN context bridge |
+| BLN connection setup | Turns explicit workspace bootstrap, invitation acceptance, and later tenant assignment into an app-friendly workflow | local BLN context bridge |
 | Tenant member and node management | Gives admins a first-party way to assign dashboard users to a tenant and choose which BLN nodes they can act through | implemented `/api/v1/network/users*` backend routes |
+| Tenant invitation management | Gives admins a first-party way to invite existing dashboard users into a tenant before opening broader operator tooling | implemented `/api/v1/network/invitations*` backend routes |
 | Delivery workspace | Gives operators a useful list and detail view backed by remote BLN deliveries | BLN-backed deliveries facade |
 | Delivery timeline and diagnostics | Exposes remote lifecycle, handoff, and SMS transport events in one place | BLN-backed events and handoff facades |
 | Handoff inbox and outbox | Surfaces incoming verification work and outgoing custody transfers | Implemented BLN-backed handoff facade |

@@ -45,8 +45,13 @@
 | Devices | POST | `/api/devices` | Authenticated | `DeviceItem` |
 | Sessions | GET | `/api/sessions` | Authenticated | `SessionItem[]` |
 | Network | POST | `/api/v1/network/bootstrap` | Admin | `{ tenant, node, binding, apiKey }` |
+| Network | POST | `/api/v1/network/workspaces/bootstrap` | Authenticated | `{ tenant, node, binding, membership, assignment, apiKey }` |
 | Network | POST | `/api/v1/network/provision-self` | Authenticated | `{ tenant, node, binding, membership, assignment, apiKey }` |
 | Network | GET | `/api/v1/network/context` | Authenticated | `{ actor, binding, memberships, assignments, effectiveContext, tenant, node, issues }` |
+| Network | GET | `/api/v1/network/invitations` | Authenticated | `{ scope, tenantId?, items }` |
+| Network | POST | `/api/v1/network/invitations` | Admin | `{ invitation }` |
+| Network | POST | `/api/v1/network/invitations/:invitationId/accept` | Authenticated | `{ invitation, membership, assignments }` |
+| Network | POST | `/api/v1/network/invitations/:invitationId/revoke` | Admin | `{ invitation }` |
 | Network | GET | `/api/v1/network/nodes` | Authenticated | `{ tenantId, activeNodeId, items }` |
 | Network | POST | `/api/v1/network/nodes` | Admin | `{ node }` |
 | Network | GET | `/api/v1/network/users` | Admin | `{ tenantId, availableNodes, items }` |
@@ -79,8 +84,15 @@
 - When `SESSION_COOKIE_SECURE=true`, auth cookies are issued with `SameSite=None` so the Railway frontend can use credentialed cross-origin requests; local insecure cookie flows stay `SameSite=Lax`.
 - `/api/v1/network/bootstrap` binds the bootstrapped tenant and first node to one local user immediately; `bindUserId` defaults to the current admin.
 - `/api/v1/network/bootstrap` stores the returned tenant API key only in encrypted backend storage and returns only safe metadata to the frontend.
-- `/api/auth/signup` is still local-user creation only; the app’s first BLN tenant and node are provisioned by the explicit follow-up route `POST /api/v1/network/provision-self`.
-- `/api/v1/network/provision-self` is the first-user onboarding route: it bootstraps a tenant and first node in the sibling `logistics-api`, stores the returned tenant API key only in encrypted backend storage, then writes the local tenant integration, membership, default node assignment, and compatibility binding mirror for the signed-in user.
+- Current target rule:
+  - `POST /api/auth/signup` creates only the local user account.
+  - Explicit workspace creation now lives at `POST /api/v1/network/workspaces/bootstrap`.
+  - `POST /api/v1/network/provision-self` is retained only as a compatibility alias during the transition.
+- `/api/v1/network/invitations` is dual-scope:
+  - authenticated non-admin callers see only their own pending invitations matched by email
+  - admin callers may list one tenant's invitations by passing `tenantId`
+- `POST /api/v1/network/invitations` and `POST /api/v1/network/invitations/:invitationId/revoke` are admin-only bridge routes.
+- `POST /api/v1/network/invitations/:invitationId/accept` requires the authenticated user's email to match the pending invitation email before it writes membership and node assignments.
 - `/api/v1/network/context` returns `200` with `issues` when the secured BLN membership, node assignment, or tenant integration is missing, stale, or holds an invalid API key, instead of converting that local state gap into a hard 4xx.
 - `/api/v1/network/nodes` never exposes BLN API keys, tenant tokens, or node session tokens to the frontend.
 - `/api/v1/network/nodes` returns the selected tenant's node list plus `activeNodeId` for non-admin callers; `POST /api/v1/network/nodes` is still admin-only support flow.
@@ -161,19 +173,23 @@ This section is implemented runtime truth, but it is not an HTTP route surface y
     - encrypts and stores the returned tenant API key in `bln_tenant_accounts`
     - returns only safe API key metadata: `last4` and `createdAt`
     - never returns the plaintext upstream API key to the frontend
-- `POST /api/v1/network/provision-self`
+- `POST /api/v1/network/workspaces/bootstrap`
   - request body:
     - `tenantName`
     - `phoneNumber`
     - optional `trustScore`
   - current behavior:
     - requires an authenticated local user
+    - is intended for explicit workspace creation or client onboarding, not generic signup
     - bootstraps one tenant and first node in the sibling `logistics-api`
     - stores the returned tenant API key only in encrypted backend storage
     - creates the local tenant membership as `OWNER`
     - creates the local default node assignment for the current user
     - returns only safe API key metadata: `last4` and `createdAt`
     - rejects the request when the current user already has an active BLN tenant membership
+- `POST /api/v1/network/provision-self`
+  - current behavior:
+    - compatibility alias for `POST /api/v1/network/workspaces/bootstrap`
 - `GET /api/v1/network/context`
   - current response shape:
     - `actor`
@@ -187,6 +203,21 @@ This section is implemented runtime truth, but it is not an HTTP route surface y
   - non-admin callers stay limited to BLN tenants where they hold an active membership
   - the route requires explicit `tenantId` or `nodeId` only when the user has multiple active memberships or assignments
   - the route mints a fresh backend-only node session to confirm the selected tenant integration credentials are still valid
+- `GET /api/v1/network/invitations`
+  - authenticated non-admin callers receive their own pending invitations by email
+  - admin callers may pass `tenantId` and optional `status` to inspect one tenant's invitation records
+- `POST /api/v1/network/invitations`
+  - admin-only invitation create
+  - accepts `tenantId`, `email`, `role`, `nodeIds`, and optional `defaultNodeId`
+  - validates that invited `nodeIds` still exist in the selected BLN tenant before writing the local invitation
+- `POST /api/v1/network/invitations/:invitationId/accept`
+  - authenticated invitation acceptance
+  - requires the signed-in local email to match the invitation email
+  - writes the local tenant membership and node assignments for the accepted invite
+  - updates the compatibility-only `users.preferences.bln` mirror only when the current binding is absent or already points at the same tenant
+- `POST /api/v1/network/invitations/:invitationId/revoke`
+  - admin-only invitation revoke
+  - only pending invitations can be revoked
 - `GET /api/v1/network/nodes`
   - non-admin callers receive the selected tenant's node list plus the active node assignment id
   - admin callers may still list nodes for an explicit tenant through service-backed access

@@ -51,9 +51,10 @@ The seed is idempotent, so rerunning `npm run db:seed` updates those records ins
 ## Current known Phase 0 gaps
 
 - API and auth contracts are only partially hardened; see `docs/GAP_ANALYSIS.md` before widening runtime behavior.
-- the backend-only logistics client foundation now exists, but no local BLN context bridge or `/api/v1` facade routes consume it yet.
-- no local bridge exists yet between authenticated app users and BLN tenant or node context.
-- no BLN-backed delivery, event, handoff, or custody UI exists yet on top of the scaffold.
+- the backend-owned BLN bridge now exists, including tenant integrations, memberships, node assignments, and `/api/v1` facade routes for network context, deliveries, and handoffs.
+- generic signup is now local-user creation only; explicit client onboarding happens separately through the workspace-bootstrap flow.
+- users can now join an existing tenant through pending workspace invitations on the workspace onboarding page, while admin-side invitation creation remains backend-only.
+- only the first BLN-backed setup UI exists; delivery, event, handoff, and custody workspaces are still largely missing from the frontend.
 - local `orders`, `drivers`, `deliveries`, and `assignments` tables exist in schema, but they are not the active execution path and should be treated as future augmentation or caching candidates until a deliberate decision reactivates them.
 - backend lint, typecheck, and build scripts are still unavailable.
 - scaffolder and deploy metadata should be read from `.scaffold/project.json` and `.github/workflows/railway-deploy.yml`, not a missing root `template.json`.
