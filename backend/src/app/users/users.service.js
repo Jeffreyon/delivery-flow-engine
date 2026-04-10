@@ -1,18 +1,34 @@
 const { z } = require("zod");
 const UsersRepository = require("./users.repository");
 
+const userPreferencesSchema = z
+  .object({
+    locale: z.string().optional(),
+    theme: z.string().optional(),
+    phoneNumber: z.string().optional(),
+    contact: z
+      .object({
+        phoneNumber: z.string().optional(),
+      })
+      .partial()
+      .optional(),
+    bln: z
+      .object({
+        tenantId: z.string().optional(),
+        nodeId: z.string().optional(),
+      })
+      .partial()
+      .optional(),
+  })
+  .passthrough()
+  .optional();
+
 const internalUserPayloadSchema = z
   .object({
     displayName: z.string().trim().min(1).nullable().optional(),
     email: z.string().email().optional(),
     photoURL: z.string().url().nullable().optional(),
-    preferences: z
-      .object({
-        locale: z.string().optional(),
-        theme: z.string().optional(),
-      })
-      .partial()
-      .optional(),
+    preferences: userPreferencesSchema,
     roles: z.array(z.string()).optional(),
     emailVerified: z.boolean().optional(),
     createdAt: z.number().optional(),
@@ -25,13 +41,7 @@ const selfUserUpdateSchema = z
   .object({
     displayName: z.string().trim().min(1).nullable().optional(),
     photoURL: z.string().url().nullable().optional(),
-    preferences: z
-      .object({
-        locale: z.string().optional(),
-        theme: z.string().optional(),
-      })
-      .partial()
-      .optional(),
+    preferences: userPreferencesSchema,
   })
   .strict();
 

@@ -125,4 +125,50 @@ describe("UsersService hardening", () => {
 
     expect(UsersRepository.upsert).not.toHaveBeenCalled();
   });
+
+  test("upsertUser preserves network-facing preference fields like phoneNumber and bln binding", async () => {
+    UsersRepository.upsert.mockImplementation(async (id, payload) => ({
+      id,
+      ...payload,
+    }));
+
+    const result = await UsersService.upsertUser("user-otp-1", {
+      email: "otp@example.com",
+      displayName: "OTP User",
+      preferences: {
+        phoneNumber: "+2348085709543",
+        bln: {
+          tenantId: "tenant-1",
+          nodeId: "node-1",
+        },
+      },
+      roles: ["user"],
+      emailVerified: false,
+      createdAt: 100,
+    });
+
+    expect(UsersRepository.upsert).toHaveBeenCalledWith(
+      "user-otp-1",
+      expect.objectContaining({
+        preferences: {
+          phoneNumber: "+2348085709543",
+          bln: {
+            tenantId: "tenant-1",
+            nodeId: "node-1",
+          },
+        },
+      })
+    );
+    expect(result).toMatchObject({
+      id: "user-otp-1",
+      email: "otp@example.com",
+      preferences: {
+        phoneNumber: "+2348085709543",
+        bln: {
+          tenantId: "tenant-1",
+          nodeId: "node-1",
+        },
+      },
+    });
+  });
 });
